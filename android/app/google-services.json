@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "278955640717",
+    "project_id": "bambamuser",
+    "storage_bucket": "bambamuser.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:278955640717:android:d3dfb7056b47539662dfc4",
+        "android_client_info": {
+          "package_name": "com.bambam.vendor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "278955640717-7bge7bg04luqclsg37ho0heorvh076ju.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmEAymIMx91M4_bXKfLoK-LovQomjsEcg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "278955640717-7bge7bg04luqclsg37ho0heorvh076ju.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "278955640717-keefkrrbudicpkpltj7q3t7itge9tp8o.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.bambamcabspartner"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
