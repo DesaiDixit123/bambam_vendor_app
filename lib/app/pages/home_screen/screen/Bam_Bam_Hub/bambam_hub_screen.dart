@@ -15,6 +15,7 @@ class BambamHubScreen extends StatelessWidget {
           body: RefreshIndicator(
             onRefresh: () async {
               await controller.getDashboardCounts();
+              await controller.getDrivers(isLoading: false);
               await controller.getRides(loadMore: false);
             },
             child: ListView(
@@ -362,22 +363,35 @@ class BambamHubScreen extends StatelessWidget {
 
   /// ================= FULL WIDTH DRIVERS CARD =================
   Widget _buildDriversCard(HomeController controller) {
-    final totalDrivers = _safeInt(controller.dashboardCounts['total_drivers']);
-    final assignedRides = _safeInt(controller.dashboardCounts['assigned_rides']);
-    final ongoingRides = _safeInt(controller.dashboardCounts['ongoing_rides']);
-    final activeRides = assignedRides + ongoingRides;
+    int totalDrivers = 0;
+    int availableDrivers = 0;
+    int busyDrivers = 0;
+    int unavailableDrivers = 0;
 
-    final availableDrivers = controller.dashboardCounts.containsKey('available_drivers')
-        ? _safeInt(controller.dashboardCounts['available_drivers'])
-        : (totalDrivers > activeRides ? totalDrivers - activeRides : totalDrivers);
-
-    final busyDrivers = controller.dashboardCounts.containsKey('busy_drivers')
-        ? _safeInt(controller.dashboardCounts['busy_drivers'])
-        : (totalDrivers > availableDrivers ? totalDrivers - availableDrivers : activeRides);
-
-    final unavailableDrivers = controller.dashboardCounts.containsKey('unavailable_drivers')
-        ? _safeInt(controller.dashboardCounts['unavailable_drivers'])
-        : 0;
+    if (controller.drivers.isNotEmpty) {
+      for (final driver in controller.drivers) {
+        final status = controller.getDriverStatus(driver).toLowerCase();
+        if (status == 'busy') {
+          busyDrivers++;
+        } else if (status == 'unavailable') {
+          unavailableDrivers++;
+        } else {
+          availableDrivers++;
+        }
+      }
+      final apiTotal = _safeInt(controller.dashboardCounts['total_drivers']);
+      totalDrivers = apiTotal > controller.drivers.length
+          ? apiTotal
+          : controller.drivers.length;
+      if (totalDrivers > (availableDrivers + busyDrivers + unavailableDrivers)) {
+        availableDrivers = totalDrivers - busyDrivers - unavailableDrivers;
+      }
+    } else {
+      totalDrivers = _safeInt(controller.dashboardCounts['total_drivers']);
+      busyDrivers = _safeInt(controller.dashboardCounts['busy_drivers']);
+      unavailableDrivers = _safeInt(controller.dashboardCounts['unavailable_drivers']);
+      availableDrivers = (totalDrivers - busyDrivers - unavailableDrivers).clamp(0, totalDrivers);
+    }
 
     return Container(
       width: double.infinity,

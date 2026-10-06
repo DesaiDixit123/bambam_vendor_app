@@ -248,7 +248,14 @@ abstract class SocketConnection {
       }
     });
 
-    // 🔴 4. Driver Offline Event
+    // ⚠️ 4. Extra Commission Due Event
+    socket!.on('extra_commission_due', (data) {
+      print("⚠️ [DEBUG] Socket: Extra commission due received: $data");
+      final mapData = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+      _showExtraCommissionPopup(mapData);
+    });
+
+    // 🔴 5. Driver Offline Event
     socket!.on('driver_offline', (_) {
       print("Socket: Driver offline signal received");
       socketDisconnect();
@@ -257,6 +264,160 @@ abstract class SocketConnection {
     socket!.onDisconnect((_) => print('Socket: Disconnected'));
     socket!.onConnectError((err) => print("Socket: Connect Error: $err"));
     socket!.onError((err) => print("Socket: Error: $err"));
+  }
+
+  static void _showExtraCommissionPopup(Map<String, dynamic> data) {
+    BuildContext? ctx = Get.overlayContext ?? Get.key.currentContext;
+    if (ctx == null) return;
+
+    final bookingCode = data['booking_code']?.toString() ?? data['bookingCode']?.toString() ?? 'N/A';
+    final initialComm = (data['initial_commission'] ?? 0).toString();
+    final finalComm = (data['final_commission'] ?? 0).toString();
+    final extraComm = (data['extra_commission_amount'] ?? 0).toString();
+    final finalFare = (data['final_trip_fare'] ?? 0).toString();
+
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      "EXTRA COMMISSION DUE",
+                      style: TextStyle(
+                        color: Colors.amber.shade900,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Get.back(),
+                    child: const Icon(Icons.close, size: 20, color: Colors.grey),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Ride Completed • Extra Fare",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                "Final trip fare increased due to extra KM / charges. Commission difference is calculated below:",
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    _commRow("Booking ID", "#$bookingCode"),
+                    if (finalFare != '0') _commRow("Final Fare", "₹$finalFare"),
+                    _commRow("Initial Commission", "₹$initialComm"),
+                    _commRow("Final Commission", "₹$finalComm"),
+                    const Divider(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Extra Commission Due",
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                        ),
+                        Text(
+                          "+₹$extraComm",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Text(
+                  "If not settled now, ₹$extraComm will be automatically added to your next ride confirmation fee.",
+                  style: TextStyle(fontSize: 11, color: Colors.orange.shade900),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () => Get.back(),
+                      child: const Text("Pay Later", style: TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFA812F),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () {
+                        Get.back();
+                        if (Get.isRegistered<HomeController>()) {
+                          Get.find<HomeController>().getVendorProfile();
+                        }
+                      },
+                      child: const Text("Acknowledge", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _commRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87)),
+        ],
+      ),
+    );
   }
 }
 

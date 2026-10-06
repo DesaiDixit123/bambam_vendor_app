@@ -360,6 +360,104 @@ void showDlDetailsDialog(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 3.1 RC Details Dialog
+// ─────────────────────────────────────────────────────────────────────────────
+
+void showRcDetailsDialog(
+    BuildContext context, Map<String, dynamic> rcData, [String? fallbackRcNumber]) {
+  final String ownerName =
+      (rcData['owner_name'] ?? rcData['registered_owner'] ?? '—').toString();
+  String rcNumber = (rcData['rc_number'] ??
+          rcData['registration_number'] ??
+          rcData['vehicle_number'] ??
+          rcData['rc_no'] ??
+          rcData['regn_no'] ??
+          '')
+      .toString()
+      .trim();
+  if (rcNumber.isEmpty || rcNumber == 'null' || rcNumber == '—' || rcNumber == 'N/A') {
+    if (fallbackRcNumber != null && fallbackRcNumber.trim().isNotEmpty) {
+      rcNumber = fallbackRcNumber.trim();
+    } else {
+      rcNumber = '—';
+    }
+  }
+  final String makerModel =
+      (rcData['maker_model'] ?? rcData['brand_name'] ?? '—').toString();
+  final String vehicleClass =
+      (rcData['vehicle_class'] ?? rcData['vehicle_category'] ?? '—').toString();
+  final String fuelType = (rcData['fuel_type'] ?? '—').toString();
+  final String insuranceUpto =
+      (rcData['insurance_expiry'] ?? rcData['insurance_upto'] ?? '—').toString();
+  final String fitnessUpto =
+      (rcData['fitness_upto'] ?? rcData['fit_up_to'] ?? '—').toString();
+  final String status = (rcData['status'] ?? 'ACTIVE').toString();
+
+  Get.dialog(
+    Dialog(
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: Colors.white,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: _dialogDecoration(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE6F4ED),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle,
+                  color: _kGreen, size: 32),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'RC Verification Successful',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: _kGreen,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _infoRow('Owner Name', ownerName),
+            _infoRow('RC Number', rcNumber),
+            _infoRow('Maker / Model', makerModel),
+            _infoRow('Vehicle Class', vehicleClass),
+            _infoRow('Fuel Type', fuelType),
+            _infoRow('Insurance Upto', insuranceUpto),
+            _infoRow('Fitness Upto', fitnessUpto),
+            _infoRow('Status', status),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kGreen,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () => Get.back(),
+                child: const Text('Close',
+                    style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    barrierDismissible: true,
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 4. Aadhaar OTP Dialog
 // ─────────────────────────────────────────────────────────────────────────────
 

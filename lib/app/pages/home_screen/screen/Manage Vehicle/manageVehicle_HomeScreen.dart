@@ -91,7 +91,12 @@ class ManagevehicleHomescreen extends StatelessWidget {
           bottomNavigationBar: Padding(
             padding: Dimens.edgeInsets20_30_20_30,
             child: CustomButton(
-              onPressed: () => RouteManagement.gotoAddvehicale1Screen(),
+              onPressed: () {
+                controller.clearAddVehicleFields();
+                controller.fetchVehicleTypes();
+                controller.fetchFuelTypes();
+                RouteManagement.gotoAddvehicale1Screen();
+              },
               text: "Add New Vehicle",
               backgroundColor: ColorsValue.appColor,
             ),

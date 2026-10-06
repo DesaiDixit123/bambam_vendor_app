@@ -22,6 +22,7 @@ class ManagevehicleDetilesscreen extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.orangeAccent),
                   onPressed: () {
+                    controller.initVehicleEdit(controller.selectedVehicleDetails!);
                     Get.to(() => EditVehicleScreen(vehicle: controller.selectedVehicleDetails!));
                   },
                 ),
@@ -178,6 +179,50 @@ class ManagevehicleDetilesscreen extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
+                                      "Vehicle Owner Name",
+                                      style: Styles.g7txtColor40014,
+                                    ),
+                                    Dimens.boxHeight4,
+                                    Text(
+                                      controller.selectedVehicleDetails!['vehicleInformation']?['vehicle_owner_name'] ??
+                                          controller.selectedVehicleDetails!['vehicle_owner_name'] ??
+                                          'N/A',
+                                      style: Styles.g1txtColor60016,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Owner Mobile Number",
+                                      style: Styles.g7txtColor40014,
+                                    ),
+                                    Dimens.boxHeight4,
+                                    Text(
+                                      controller.selectedVehicleDetails!['vehicleInformation']?['vehicle_owner_mobile'] ??
+                                          controller.selectedVehicleDetails!['vehicle_owner_mobile'] ??
+                                          'N/A',
+                                      style: Styles.g1txtColor60016,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          Dimens.boxHeight12,
+                          Divider(color: ColorsValue.l2),
+                          Dimens.boxHeight12,
+                          Row(
+                            spacing: Dimens.sixteen,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
                                       "Fuel Type",
                                       style: Styles.g7txtColor40014,
                                     ),
@@ -213,17 +258,6 @@ class ManagevehicleDetilesscreen extends StatelessWidget {
                                 ),
                               ),
                             ],
-                          ),
-                          Dimens.boxHeight12,
-                          Divider(color: ColorsValue.l2),
-                          Dimens.boxHeight12,
-                          Text("Sourcing", style: Styles.g7txtColor40014),
-                          Dimens.boxHeight4,
-                          Text(
-                            controller
-                                    .selectedVehicleDetails!['vehicleInformation']?['sourcing'] ??
-                                "N/A",
-                            style: Styles.g1txtColor60016,
                           ),
                         ],
                       ),

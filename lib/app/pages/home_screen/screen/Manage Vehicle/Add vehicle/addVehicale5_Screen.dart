@@ -3,9 +3,26 @@ import 'package:bam_bam_vendor/app/app.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:bam_bam_vendor/data/helpers/api_wrapper.dart';
 
 class Addvehicale5Screen extends StatelessWidget {
   const Addvehicale5Screen({super.key});
+
+  String _resolveImageUrl(String? path) {
+    if (path == null || path.trim().isEmpty) return "";
+    final trimmed = path.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    String cleanPath = trimmed;
+    if (cleanPath.startsWith('uploads/')) {
+      cleanPath = cleanPath.substring('uploads/'.length);
+    } else if (cleanPath.startsWith('/uploads/')) {
+      cleanPath = cleanPath.substring('/uploads/'.length);
+    }
+    if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    return "${ApiWrapper.imageUrl}$cleanPath";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +33,34 @@ class Addvehicale5Screen extends StatelessWidget {
           bottomNavigationBar: Padding(
             padding: Dimens.edgeInsets20_30_20_30,
             child: CustomButton(
-              onPressed: () => RouteManagement.gotoAddvehicale6Screen(),
+              onPressed: () {
+                final hasInterior = controller.interiorImageFile != null ||
+                    (controller.isTransferredVehicle && (controller.transferredVehicleExistingInteriorImage?.isNotEmpty ?? false));
+                final hasDicky = controller.dickyImageFile != null ||
+                    (controller.isTransferredVehicle && (controller.transferredVehicleExistingDickyImage?.isNotEmpty ?? false));
+                final hasCarrier = controller.carrierImageFile != null ||
+                    (controller.isTransferredVehicle && (controller.transferredVehicleExistingCarrierImage?.isNotEmpty ?? false));
+                final hasAgreement = controller.rentedVehicleAgreementFile != null ||
+                    (controller.isTransferredVehicle && (controller.transferredVehicleExistingAgreement?.isNotEmpty ?? false));
+
+                if (!hasInterior) {
+                  Utility.snacBar("Please upload Interior Image", Colors.red);
+                  return;
+                }
+                if (!hasDicky) {
+                  Utility.snacBar("Please upload Dicky Image", Colors.red);
+                  return;
+                }
+                if (!hasCarrier) {
+                  Utility.snacBar("Please upload Carrier Image", Colors.red);
+                  return;
+                }
+                if (controller.selectedSourcing == "Rented Vehicle" && !hasAgreement) {
+                  Utility.snacBar("Please upload Rented Vehicle Agreement", Colors.red);
+                  return;
+                }
+                RouteManagement.gotoAddvehicale6Screen();
+              },
               text: "Save & Continue",
               backgroundColor: ColorsValue.appColor,
             ),
@@ -46,6 +90,7 @@ class Addvehicale5Screen extends StatelessWidget {
                       "Interior Image *",
                       controller.interiorImageFile,
                       () => controller.pickVehicleImage('interior'),
+                      controller.transferredVehicleExistingInteriorImage,
                     ),
                   ),
                   Dimens.boxWidth16,
@@ -55,6 +100,7 @@ class Addvehicale5Screen extends StatelessWidget {
                       "Dicky Image *",
                       controller.dickyImageFile,
                       () => controller.pickVehicleImage('dicky'),
+                      controller.transferredVehicleExistingDickyImage,
                     ),
                   ),
                 ],
@@ -68,6 +114,7 @@ class Addvehicale5Screen extends StatelessWidget {
                       "Carrier Image *",
                       controller.carrierImageFile,
                       () => controller.pickVehicleImage('carrier'),
+                      controller.transferredVehicleExistingCarrierImage,
                     ),
                   ),
                   Dimens.boxWidth16,
@@ -80,6 +127,7 @@ class Addvehicale5Screen extends StatelessWidget {
                           "Rented Agreement",
                           controller.rentedVehicleAgreementFile,
                           () => controller.pickVehicleImage('agreement'),
+                          controller.transferredVehicleExistingAgreement,
                         ),
                         const SizedBox(height: 6),
                         InkWell(
@@ -135,12 +183,19 @@ class Addvehicale5Screen extends StatelessWidget {
     HomeController controller,
     String title,
     File? imageFile,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, [
+    String? existingImageUrl,
+  ]) {
+    final hasExisting = existingImageUrl != null && existingImageUrl.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: Styles.g1txtColor60014),
+        Row(
+          children: [
+            Text(title.replaceAll(' *', ''), style: Styles.g1txtColor60014),
+            Text(" *", style: Styles.blackColorW50016.copyWith(color: Colors.red)),
+          ],
+        ),
         Dimens.boxHeight4,
         GestureDetector(
           onTap: onTap,
@@ -157,12 +212,26 @@ class Addvehicale5Screen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     child: Image.file(imageFile, fit: BoxFit.cover),
                   )
-                : Center(
-                    child: Image.asset(
-                      AssetConstants.ic_uolodImage,
-                      height: Dimens.sixty,
-                    ),
-                  ),
+                : hasExisting
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          _resolveImageUrl(existingImageUrl),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Image.asset(
+                              AssetConstants.ic_uolodImage,
+                              height: Dimens.sixty,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Image.asset(
+                          AssetConstants.ic_uolodImage,
+                          height: Dimens.sixty,
+                        ),
+                      ),
           ),
         ),
       ],

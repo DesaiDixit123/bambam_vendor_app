@@ -504,13 +504,24 @@ class HomeUsecases {
     }, true);
   }
 
+  /// 🚗 Confirm Vehicle Transfer (Multipart)
+  Future<ResponseModel> confirmVehicleTransfer({
+    required Map<String, String> fields,
+    required Map<String, File> files,
+  }) {
+    return apiWrapper.makeRequest("vehicles/transfer/confirm", Request.multipartPost, {
+      "fields": fields,
+      "files": files,
+    }, true);
+  }
+
   /// 🚗 Fetch Fuel Types
   Future<ResponseModel> fetchFuelTypes() {
     return apiWrapper.makeRequest(
       "admin/fuel_type/withoutpagination",
       Request.post,
       {},
-      true,
+      false,
     );
   }
 

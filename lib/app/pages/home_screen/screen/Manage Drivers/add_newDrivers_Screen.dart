@@ -1,5 +1,6 @@
 import 'package:bam_bam_vendor/app/app.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -13,30 +14,168 @@ class AddNewdriversScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<HomeController>(
       builder: (controller) {
+        final isStep1 = controller.selectedDriver == null && controller.addDriverCurrentStep == 1;
         return Scaffold(
-          bottomNavigationBar: Padding(
-            padding: Dimens.edgeInsets20_30_20_30,
-            child: CustomButton(
-              onPressed: () {
-                if (controller.selectedDriver != null) {
-                  controller.updateDriver();
-                } else {
-                  controller.registerDriver();
-                }
-              },
-              text: "Save",
-              backgroundColor: ColorsValue.appColor,
-            ),
-          ),
+          bottomNavigationBar: isStep1
+              ? null
+              : Padding(
+                  padding: Dimens.edgeInsets20_30_20_30,
+                  child: Row(
+                    children: [
+                      if (controller.selectedDriver == null) ...[
+                        Expanded(
+                          flex: 1,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              controller.addDriverCurrentStep = 1;
+                              controller.update();
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(color: Color(0xFFFF6B00)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text("Back", style: TextStyle(color: Color(0xFFFF6B00), fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(
+                        flex: 2,
+                        child: CustomButton(
+                          onPressed: () {
+                            if (controller.selectedDriver != null) {
+                              controller.updateDriver();
+                            } else {
+                              controller.registerDriver();
+                            }
+                          },
+                          text: controller.isTransferredDriver ? "Confirm & Transfer" : "Save",
+                          backgroundColor: ColorsValue.appColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
           backgroundColor: ColorsValue.l3,
           appBar: AppBarWidget(
-            onTapBack: () => Get.back(),
-            title: "Add New Driver",
+            onTapBack: () {
+              if (controller.selectedDriver == null && controller.addDriverCurrentStep == 2) {
+                controller.addDriverCurrentStep = 1;
+                controller.update();
+              } else {
+                Get.back();
+              }
+            },
+            title: controller.selectedDriver != null
+                ? "Edit Driver"
+                : controller.isTransferredDriver
+                    ? "Transfer Driver"
+                    : "Add New Driver",
           ),
-          body: ListView(
-            padding: Dimens.edgeInsets20,
-            physics: BouncingScrollPhysics(),
-            children: [
+          body: isStep1
+              ? _buildStep1(context, controller)
+              : _buildStep2(context, controller),
+        );
+      },
+    );
+  }
+
+  Widget _buildStep2(BuildContext context, HomeController controller) {
+    return ListView(
+      padding: Dimens.edgeInsets20,
+      physics: const BouncingScrollPhysics(),
+      children: [
+        if (controller.selectedDriver == null) ...[
+          // Stepper Progress Header
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    controller.addDriverCurrentStep = 1;
+                    controller.update();
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.check, color: Colors.white, size: 16),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text("Step 1", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(width: 24, height: 1.5, color: Colors.green),
+                const SizedBox(width: 12),
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF6B00),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text("2", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+                const SizedBox(width: 6),
+                const Text("Step 2: Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFFF6B00))),
+              ],
+            ),
+          ),
+        ],
+
+        if (controller.isTransferredDriver) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F2FD),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF90CAF9)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.sync_alt_rounded, color: Color(0xFF1976D2), size: 24),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Transferring Driver", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0D47A1))),
+                      const SizedBox(height: 2),
+                      Text(
+                        "Transferred from ${controller.transferredDriverData?['previous_vendor'] ?? 'Previous Vendor'}. Verified details loaded.",
+                        style: TextStyle(fontSize: 11, color: Colors.blue.shade900),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: const Color(0xFFC8E6C9), borderRadius: BorderRadius.circular(12)),
+                  child: const Text("Verified", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32))),
+                ),
+              ],
+            ),
+          ),
+        ],
               CustomTextFormField(
                 filled: true,
                 fillColor: ColorsValue.fildColos,
@@ -68,6 +207,10 @@ class AddNewdriversScreen extends StatelessWidget {
                 isCompulsory: true,
                 isTitle: true,
                 keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
                 onChanged: (vaule) {
                   controller.update();
                 },
@@ -739,10 +882,7 @@ class AddNewdriversScreen extends StatelessWidget {
                 ],
               ),
             ],
-          ),
-        );
-      },
-    );
+          );
   }
 
   void _showSearchableBottomSheet({
@@ -902,6 +1042,330 @@ class AddNewdriversScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildStep1(BuildContext context, HomeController controller) {
+    return ListView(
+      padding: Dimens.edgeInsets20,
+      physics: const BouncingScrollPhysics(),
+      children: [
+        // Stepper Progress Header
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFF6B00),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text("1", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                    const SizedBox(width: 6),
+                    const Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text("Step 1: Mobile", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFFF6B00))),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(width: 16, height: 1.5, color: Colors.grey.shade300),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text("2", style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text("Step 2: Details", style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Dimens.boxHeight20,
+
+        // Step 1 Verification Card
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Driver Verification",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                "Enter driver's 10-digit mobile number to verify registration or transfer from another vendor.",
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              ),
+              const SizedBox(height: 20),
+
+              // Mobile input
+              CustomTextFormField(
+                filled: true,
+                fillColor: ColorsValue.fildColos,
+                style: Styles.g7txtColor70014,
+                hintText: "Enter 10-digit mobile number".tr,
+                textEditingController: controller.driverMobileController,
+                isBorder: true,
+                isCompulsory: true,
+                isTitle: true,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                onChanged: (val) {
+                  controller.driverTransferCheckResult = null;
+                  controller.isTransferOtpSent = false;
+                  controller.update();
+                },
+                title: "Driver Mobile Number".tr,
+                hintStyle: Styles.g7txtColor40012,
+                titleStyle: Styles.blackColor60014,
+              ),
+              const SizedBox(height: 16),
+
+              // Check Driver Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: controller.isCheckingDriverMobile
+                      ? null
+                      : () {
+                          final phone = controller.driverMobileController.text.trim();
+                          if (phone.isEmpty) {
+                            Utility.snacBar("Please enter mobile number", Colors.red);
+                            return;
+                          }
+                          if (phone.length != 10) {
+                            Utility.snacBar("Mobile number must be exactly 10 digits", Colors.red);
+                            return;
+                          }
+                          controller.checkDriverMobileForTransfer();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6B00),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: controller.isCheckingDriverMobile
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text("Check Driver", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                ),
+              ),
+
+              // Case 1: Driver belongs to THIS vendor
+              if (controller.driverTransferCheckResult != null && controller.driverTransferCheckResult!['isOwnDriver'] == true) ...[
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE3F2FD),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF90CAF9)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded, color: Color(0xFF1976D2), size: 22),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              "Driver Already in Your List",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0D47A1)),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFBBDEFB),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text("Existing", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Driver: ${controller.driverTransferCheckResult!['driver_name'] ?? ''}",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "DL: ${controller.driverTransferCheckResult!['DL_number'] ?? 'N/A'}",
+                        style: TextStyle(color: Colors.grey.shade800, fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "This driver was added by you and already exists in your active driver list. No OTP verification is needed.",
+                        style: TextStyle(color: Colors.blue.shade900, fontSize: 11, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Get.back(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1976D2),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text("View in Driver List", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Case 2: Driver belongs to another vendor
+              if (controller.driverTransferCheckResult != null && controller.driverTransferCheckResult!['belongsToOtherVendor'] == true) ...[
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8E1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFD54F)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, color: Color(0xFFF57F17), size: 22),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Driver Registered with Another Vendor",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.amber.shade900),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Driver: ${controller.driverTransferCheckResult!['driver_name'] ?? ''}",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Current Vendor: ${controller.driverTransferCheckResult!['previous_vendor_name'] ?? 'Another Vendor'}",
+                        style: TextStyle(color: Colors.grey.shade800, fontSize: 12),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "An OTP must be verified from driver's mobile to authorize transfer.",
+                        style: TextStyle(color: Colors.grey.shade700, fontSize: 11),
+                      ),
+                      const SizedBox(height: 14),
+
+                      if (!controller.isTransferOtpSent)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: controller.isSendingTransferOtp ? null : () => controller.sendTransferOtp(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF57F17),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: controller.isSendingTransferOtp
+                                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                : const Text("Send OTP to Driver", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        )
+                      else ...[
+                        const Text("Enter 6-Digit OTP received by Driver:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: controller.transferOtpController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 4),
+                          decoration: InputDecoration(
+                            hintText: "• • • • • •",
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFFFB300))),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: controller.isVerifyingTransferOtp ? null : () => controller.verifyTransferOtp(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF6B00),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: controller.isVerifyingTransferOtp
+                                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                : const Text("Verify OTP & Transfer", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: controller.isSendingTransferOtp ? null : () => controller.sendTransferOtp(),
+                            child: const Text("Resend OTP", style: TextStyle(color: Color(0xFFF57F17), fontWeight: FontWeight.bold, fontSize: 12)),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

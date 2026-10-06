@@ -12,7 +12,7 @@ class RegisterScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: ColorsValue.whiteColor,
           appBar: AppBarWidget(
-            title: "Become a BamBam Partner ",
+            title: "Become a BamBam Vendor ",
             onTapBack: () {
               Get.back();
             },

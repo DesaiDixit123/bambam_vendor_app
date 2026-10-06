@@ -74,16 +74,16 @@ class TranslationsFile extends Translations {
       'is_acknowlege':
           "I acknowledge and agree to the above penalties in case of any non-compliance or delays from my side.",
       'driver_allocation_detiles': "Driver Allocation Details",
-      'reg1': "BamBam Partner application form",
+      'reg1': "BamBam Vendor application form",
       'reg2':
           "Are you a driver with your own car Join BamBam and start earning!",
       'reg3':
           "Have a fleet of cars and drivers? Partner with BamBam to onboard them all!",
-      'partner_regisration': "Partner Registration",
-      'company_partner_registration': "Company Partner Registration",
+      'partner_regisration': "Vendor Registration",
+      'company_partner_registration': "Company Vendor Registration",
       'full_name': "Full Name",
       'email': "Email",
-      'become_partner': "Become a BamBam Partner",
+      'become_partner': "Become a BamBam Vendor",
       'name_as_per_pan': "Name as per PAN Card",
       'dob_as_per_pan': "Date of Birth according to PAN Card",
     },

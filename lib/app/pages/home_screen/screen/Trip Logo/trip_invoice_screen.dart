@@ -87,8 +87,16 @@ class TripInvoiceScreen extends StatelessWidget {
                 Dimens.boxHeight12,
                 _rowItem("Base Fare", "₹${travel['fare_summary']?['base_fare'] ?? travel['final_price'] ?? 0}"),
                 _rowItem("GST (Tax)", "₹${travel['fare_summary']?['gst_amount'] ?? payment['gst_applied']?['gst_amount'] ?? booking['gst_amount'] ?? 0}"),
-                if (payment['advance_paid'] != null && payment['advance_paid'].toString() != '0')
-                  _rowItem("Advance Paid", "₹${payment['advance_paid']}"),
+                if (payment['advance_paid'] != null &&
+                    payment['advance_paid'].toString() != '0' &&
+                    (payment['payment_mode'] ?? booking['payment_mode'] ?? 'Cash').toString().toLowerCase() != 'cash' &&
+                    booking['payment_type'] != 0)
+                  _rowItem(
+                    (payment['advance_percent'] != null && payment['advance_percent'].toString() != '0')
+                        ? "Advance Paid (${payment['advance_percent']}%)"
+                        : "Advance Paid",
+                    "₹${payment['advance_paid']}",
+                  ),
                 if (payment['commission_amount'] != null && payment['commission_amount'].toString() != '0')
                   _rowItem("Commission", "-₹${payment['commission_amount']}"),
                 Divider(color: ColorsValue.l2),
@@ -98,9 +106,20 @@ class TripInvoiceScreen extends StatelessWidget {
           ),
           Dimens.boxHeight20,
           CustomButton(
-            text: "Print / Save PDF",
+            text: "Download / Save PDF Invoice",
             onPressed: () {
-              Utility.snacBar("Invoice saved to downloads.", ColorsValue.appColor);
+              final idToUse = booking['_id']?.toString() ??
+                  booking['booking_id']?.toString() ??
+                  data['_id']?.toString() ??
+                  '';
+              if (idToUse.isNotEmpty) {
+                final pdfUrl =
+                    "https://apis.bambamcabs.com/vendor/request/booking/invoice/$idToUse?role=vendor";
+                Utility.snacBar("Opening invoice download...", ColorsValue.appColor);
+                Utility.launchLinkURL(pdfUrl);
+              } else {
+                Utility.snacBar("Booking ID not found", ColorsValue.redColor);
+              }
             },
             backgroundColor: ColorsValue.appColor,
             radius: Dimens.twelve,

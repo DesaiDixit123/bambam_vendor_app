@@ -12,21 +12,40 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<HomeController>(
       builder: (controller) {
-        return Scaffold(
-          key: controller.scaffoldKey,
-          backgroundColor: ColorsValue.l3,
-          appBar: AppBar(
+        return PopScope(
+          canPop: controller.selectedIndex == 0 &&
+              !(controller.scaffoldKey.currentState?.isDrawerOpen ?? false),
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            if (controller.scaffoldKey.currentState?.isDrawerOpen ?? false) {
+              controller.scaffoldKey.currentState?.closeDrawer();
+              return;
+            }
+            if (controller.selectedIndex != 0) {
+              controller.changeDrawerIndex(0);
+            }
+          },
+          child: Scaffold(
+            key: controller.scaffoldKey,
             backgroundColor: ColorsValue.l3,
-            elevation: 0,
-            leading: Padding(
-              padding: Dimens.edgeInsets10,
-              child: InkWell(
-                onTap: () {
-                  controller.scaffoldKey.currentState?.openDrawer();
-                },
-                child: SvgPicture.asset(AssetConstants.menu),
+            appBar: AppBar(
+              backgroundColor: ColorsValue.l3,
+              elevation: 0,
+              leading: Padding(
+                padding: Dimens.edgeInsets10,
+                child: InkWell(
+                  onTap: () {
+                    if (controller.selectedIndex != 0) {
+                      controller.changeDrawerIndex(0);
+                    } else {
+                      controller.scaffoldKey.currentState?.openDrawer();
+                    }
+                  },
+                  child: controller.selectedIndex != 0
+                      ? const Icon(Icons.arrow_back, color: Colors.black)
+                      : SvgPicture.asset(AssetConstants.menu),
+                ),
               ),
-            ),
             title: Row(
               children: [
                 Flexible(
@@ -372,10 +391,11 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           body: controller.allScrrenList[controller.selectedIndex],
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildDrawerItem({
     required int index,

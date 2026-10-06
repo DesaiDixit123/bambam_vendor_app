@@ -18,14 +18,32 @@ class Addvehicale3Screen extends StatelessWidget {
           bottomNavigationBar: Padding(
             padding: Dimens.edgeInsets20_30_20_30,
             child: CustomButton(
-              onPressed: () => RouteManagement.gotoAddvehicale4Screen(),
+              onPressed: () {
+                if (controller.selectedSourcing == null || controller.selectedSourcing!.isEmpty) {
+                  Utility.snacBar("Please select sourcing preference", Colors.red);
+                  return;
+                }
+                if (controller.selectedPetFriendly == null || controller.selectedPetFriendly!.isEmpty) {
+                  Utility.snacBar("Please select pet friendly preference", Colors.red);
+                  return;
+                }
+                if (controller.selectedLuggageCarrier == null || controller.selectedLuggageCarrier!.isEmpty) {
+                  Utility.snacBar("Please select luggage carrier preference", Colors.red);
+                  return;
+                }
+                if (controller.selectedWorkingRearSeatBelts == null || controller.selectedWorkingRearSeatBelts!.isEmpty) {
+                  Utility.snacBar("Please select working rear seat belts preference", Colors.red);
+                  return;
+                }
+                RouteManagement.gotoAddvehicale4Screen();
+              },
               text: "Save & Continue",
               backgroundColor: ColorsValue.appColor,
             ),
           ),
           body: ListView(
             padding: Dimens.edgeInsets20,
-            physics: BouncingScrollPhysics(),
+            physics: const BouncingScrollPhysics(),
             children: [
               //
               StepHeaderWidget(
@@ -37,7 +55,12 @@ class Addvehicale3Screen extends StatelessWidget {
                 inactiveColor: ColorsValue.yelloCB,
               ),
               Dimens.boxHeight16,
-              Text("Sourcing *", style: Styles.g1txtColor60014),
+              Row(
+                children: [
+                  Text("Sourcing", style: Styles.g1txtColor60014),
+                  Text(" *", style: Styles.blackColorW50016.copyWith(color: Colors.red)),
+                ],
+              ),
               Dimens.boxHeight4,
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(
@@ -61,7 +84,12 @@ class Addvehicale3Screen extends StatelessWidget {
                 },
               ),
               Dimens.boxHeight16,
-              Text("Pet Friendly *", style: Styles.g1txtColor60014),
+              Row(
+                children: [
+                  Text("Pet Friendly", style: Styles.g1txtColor60014),
+                  Text(" *", style: Styles.blackColorW50016.copyWith(color: Colors.red)),
+                ],
+              ),
               Dimens.boxHeight4,
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(
@@ -85,7 +113,12 @@ class Addvehicale3Screen extends StatelessWidget {
                 },
               ),
               Dimens.boxHeight16,
-              Text("Luggage Carrier *", style: Styles.g1txtColor60014),
+              Row(
+                children: [
+                  Text("Luggage Carrier", style: Styles.g1txtColor60014),
+                  Text(" *", style: Styles.blackColorW50016.copyWith(color: Colors.red)),
+                ],
+              ),
               Dimens.boxHeight4,
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(
@@ -109,7 +142,12 @@ class Addvehicale3Screen extends StatelessWidget {
                 },
               ),
               Dimens.boxHeight16,
-              Text("Working Rear Seat Belts *", style: Styles.g1txtColor60014),
+              Row(
+                children: [
+                  Text("Working Rear Seat Belts", style: Styles.g1txtColor60014),
+                  Text(" *", style: Styles.blackColorW50016.copyWith(color: Colors.red)),
+                ],
+              ),
               Dimens.boxHeight4,
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(

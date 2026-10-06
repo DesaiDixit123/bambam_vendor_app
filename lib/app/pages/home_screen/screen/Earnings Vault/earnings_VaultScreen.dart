@@ -471,14 +471,14 @@ class EarningsVaultscreen extends StatelessWidget {
         "${totalBooking['local'] ?? 0}",
       ],
       [
-        "Partner Billed",
+        "Vendor Billed",
         "${partnerBilled['all'] ?? 0}",
         "${partnerBilled['oneway'] ?? 0}",
         "${partnerBilled['roundtrip'] ?? 0}",
         "${partnerBilled['local'] ?? 0}",
       ],
       [
-        "Partner Unbilled",
+        "Vendor Unbilled",
         "${partnerUnbilled['all'] ?? 0}",
         "${partnerUnbilled['oneway'] ?? 0}",
         "${partnerUnbilled['roundtrip'] ?? 0}",

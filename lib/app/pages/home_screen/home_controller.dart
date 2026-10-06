@@ -47,6 +47,13 @@ class HomeController extends GetxController {
 
   void changeDrawerIndex(int index) {
     selectedIndex = index;
+    if (index == 0) {
+      if (driverSearchController.text.isNotEmpty) {
+        driverSearchController.clear();
+      }
+      getDashboardCounts(isLoading: false);
+      getDrivers(isLoading: false);
+    }
     update(); // refresh UI
   }
 
@@ -265,6 +272,17 @@ class HomeController extends GetxController {
   String verifiedDriverPan = "";
   String verifiedDriverAadhaar = "";
   String verifiedDriverDl = "";
+
+  // --- 2-Step Driver Transfer Variables ---
+  int addDriverCurrentStep = 1;
+  bool isCheckingDriverMobile = false;
+  Map<String, dynamic>? driverTransferCheckResult;
+  bool isSendingTransferOtp = false;
+  bool isTransferOtpSent = false;
+  TextEditingController transferOtpController = TextEditingController();
+  bool isVerifyingTransferOtp = false;
+  bool isTransferredDriver = false;
+  Map<String, dynamic>? transferredDriverData;
   
   // --- Vendor Profile Document Verification States ---
   bool isProfileAadhaarVerified = true;
@@ -298,7 +316,33 @@ class HomeController extends GetxController {
 
   // Screen 1: Information
   bool isRegisteringVehicle = false;
+  int addVehicleCurrentStep = 1; // 1: Owner Mobile Check, 2: Vehicle Information
+  bool isCheckingVehicleOwnerMobile = false;
+  Map<String, dynamic>? vehicleTransferCheckResult;
+  bool isSendingVehicleTransferOtp = false;
+  bool isVehicleTransferOtpSent = false;
+  bool isVerifyingVehicleTransferOtp = false;
+  TextEditingController vehicleTransferOtpController = TextEditingController();
+  bool isTransferredVehicle = false;
+  Map<String, dynamic>? transferredVehicleData;
+  String? transferredVehicleExistingFrontImage;
+  String? transferredVehicleExistingBackImage;
+  String? transferredVehicleExistingLeftImage;
+  String? transferredVehicleExistingRightImage;
+  String? transferredVehicleExistingInteriorImage;
+  String? transferredVehicleExistingPlateImage;
+  String? transferredVehicleExistingDickyImage;
+  String? transferredVehicleExistingCarrierImage;
+  String? transferredVehicleExistingInsuranceDoc;
+  String? transferredVehicleExistingFitnessDoc;
+  String? transferredVehicleExistingPermitDoc;
+  String? transferredVehicleExistingPucDoc;
+  String? transferredVehicleExistingRcImage;
+  String? transferredVehicleExistingAgreement;
+
   TextEditingController vehicleBrandNameController = TextEditingController();
+  TextEditingController vehicleOwnerNameController = TextEditingController();
+  TextEditingController vehicleOwnerMobileController = TextEditingController();
   TextEditingController vehicleNumberController = TextEditingController();
   TextEditingController vehicleMakeYearController = TextEditingController();
   String? selectedVehicleTypeId;
@@ -308,6 +352,11 @@ class HomeController extends GetxController {
   File? frontImageFile;
 
   // Screen 2: Documents
+  TextEditingController rcNumberController = TextEditingController();
+  bool isRcVerifying = false;
+  bool isRcVerified = false;
+  String? rcVehicleTypeError;
+  Map<String, dynamic>? rcDetails;
   TextEditingController fitnessExpiryController = TextEditingController();
   TextEditingController insuranceExpiryController = TextEditingController();
   TextEditingController permitExpiryController = TextEditingController();
@@ -628,10 +677,18 @@ class HomeController extends GetxController {
 
   Future<void> registerVehicle() async {
     if (isRegisteringVehicle) return;
+
+    if (!isRcVerified) {
+      Utility.snacBar("Please verify RC Number before registering vehicle", Colors.red);
+      return;
+    }
     
     Map<String, String> fields = {
       "brand_name": vehicleBrandNameController.text.trim(),
+      "vehicle_owner_name": vehicleOwnerNameController.text.trim(),
+      "vehicle_owner_mobile": vehicleOwnerMobileController.text.trim(),
       "vehicle_number": vehicleNumberController.text.trim(),
+      "rc_number": rcNumberController.text.trim().isNotEmpty ? rcNumberController.text.trim() : vehicleNumberController.text.trim(),
       "vehicle_type": selectedVehicleTypeId ?? "",
       "fuel_type[0]": selectedFuelTypeId ?? "",
       "vehicle_make_year": vehicleMakeYearController.text.trim(),
@@ -643,6 +700,8 @@ class HomeController extends GetxController {
       "fitness_expiry": fitnessExpiryController.text.trim(),
       "permit_expiry": permitExpiryController.text.trim(),
       "permit_type": selectedPermitType ?? "",
+      "is_rc_verified": isRcVerified ? "true" : "false",
+      if (rcDetails != null) "rc_details": jsonEncode(rcDetails),
     };
 
     Map<String, File> files = {};
@@ -672,25 +731,137 @@ class HomeController extends GetxController {
     }
 
     // Validation
-    if (fields["brand_name"]!.isEmpty ||
-        fields["vehicle_number"]!.isEmpty ||
-        fields["vehicle_type"]!.isEmpty ||
-        fields["fuel_type[0]"]!.isEmpty ||
-        files["front_image"] == null ||
-        files["back_image"] == null ||
-        files["left_image"] == null ||
-        files["right_image"] == null ||
-        files["interior_image"] == null ||
-        files["number_plate_image"] == null ||
-        files["insurance_document"] == null ||
-        files["fitness_document"] == null ||
-        files["permit_document"] == null ||
-        files["puc_document"] == null ||
-        files["rc_image"] == null) {
-      Utility.snacBar(
-        "Please fill all required fields and upload all images",
-        Colors.red,
-      );
+    final hasFront = files["front_image"] != null || (isTransferredVehicle && (transferredVehicleExistingFrontImage?.isNotEmpty ?? false));
+    final hasBack = files["back_image"] != null || (isTransferredVehicle && (transferredVehicleExistingBackImage?.isNotEmpty ?? false));
+    final hasLeft = files["left_image"] != null || (isTransferredVehicle && (transferredVehicleExistingLeftImage?.isNotEmpty ?? false));
+    final hasRight = files["right_image"] != null || (isTransferredVehicle && (transferredVehicleExistingRightImage?.isNotEmpty ?? false));
+    final hasInterior = files["interior_image"] != null || (isTransferredVehicle && (transferredVehicleExistingInteriorImage?.isNotEmpty ?? false));
+    final hasPlate = files["number_plate_image"] != null || (isTransferredVehicle && (transferredVehicleExistingPlateImage?.isNotEmpty ?? false));
+    final hasInsurance = files["insurance_document"] != null || (isTransferredVehicle && (transferredVehicleExistingInsuranceDoc?.isNotEmpty ?? false));
+    final hasFitness = files["fitness_document"] != null || (isTransferredVehicle && (transferredVehicleExistingFitnessDoc?.isNotEmpty ?? false));
+    final hasPermit = files["permit_document"] != null || (isTransferredVehicle && (transferredVehicleExistingPermitDoc?.isNotEmpty ?? false));
+    final hasPuc = files["puc_document"] != null || (isTransferredVehicle && (transferredVehicleExistingPucDoc?.isNotEmpty ?? false));
+    final hasRc = files["rc_image"] != null || (isTransferredVehicle && (transferredVehicleExistingRcImage?.isNotEmpty ?? false));
+
+    if (vehicleBrandNameController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter brand name", Colors.red);
+      return;
+    }
+    if (vehicleOwnerNameController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter vehicle owner name", Colors.red);
+      return;
+    }
+    if (vehicleOwnerMobileController.text.trim().isEmpty ||
+        vehicleOwnerMobileController.text.trim().length != 10) {
+      Utility.snacBar("Please enter valid 10-digit vehicle owner mobile number", Colors.red);
+      return;
+    }
+    if (vehicleNumberController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter vehicle number", Colors.red);
+      return;
+    }
+    if (vehicleMakeYearController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter vehicle make year", Colors.red);
+      return;
+    }
+    if (selectedVehicleTypeId == null || selectedVehicleTypeId!.isEmpty) {
+      Utility.snacBar("Please select vehicle type", Colors.red);
+      return;
+    }
+    if (selectedFuelTypeId == null || selectedFuelTypeId!.isEmpty) {
+      Utility.snacBar("Please select fuel type", Colors.red);
+      return;
+    }
+    if (selectedSourcing == null || selectedSourcing!.isEmpty) {
+      Utility.snacBar("Please select sourcing preference", Colors.red);
+      return;
+    }
+    if (fitnessExpiryController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter fitness expiry date", Colors.red);
+      return;
+    }
+    if (insuranceExpiryController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter insurance expiry date", Colors.red);
+      return;
+    }
+    if (permitExpiryController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter permit expiry date", Colors.red);
+      return;
+    }
+    if (selectedPermitType == null || selectedPermitType!.isEmpty) {
+      Utility.snacBar("Please select permit type", Colors.red);
+      return;
+    }
+    if (rcNumberController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter RC number", Colors.red);
+      return;
+    }
+    if (!isRcVerified) {
+      Utility.snacBar("Please verify RC Number before saving", Colors.red);
+      return;
+    }
+    if (!hasInsurance) {
+      Utility.snacBar("Please upload Insurance Document", Colors.red);
+      return;
+    }
+    if (!hasFitness) {
+      Utility.snacBar("Please upload Fitness Document", Colors.red);
+      return;
+    }
+    if (!hasPermit) {
+      Utility.snacBar("Please upload Permit Document", Colors.red);
+      return;
+    }
+    if (!hasPuc) {
+      Utility.snacBar("Please upload PUC Document", Colors.red);
+      return;
+    }
+    if (!hasRc) {
+      Utility.snacBar("Please upload RC Image", Colors.red);
+      return;
+    }
+    if (selectedSourcing == "Rented Vehicle") {
+      final hasAgreement = files["rented_vehicle_agreement"] != null ||
+          (isTransferredVehicle && (transferredVehicleExistingAgreement?.isNotEmpty ?? false));
+      if (!hasAgreement) {
+        Utility.snacBar("Please upload Rented Vehicle Agreement", Colors.red);
+        return;
+      }
+    }
+    if (!hasFront) {
+      Utility.snacBar("Please upload Front View car photo", Colors.red);
+      return;
+    }
+    if (!hasBack) {
+      Utility.snacBar("Please upload Back View car photo", Colors.red);
+      return;
+    }
+    if (!hasLeft) {
+      Utility.snacBar("Please upload Left View car photo", Colors.red);
+      return;
+    }
+    if (!hasRight) {
+      Utility.snacBar("Please upload Right View car photo", Colors.red);
+      return;
+    }
+    if (!hasInterior) {
+      Utility.snacBar("Please upload Interior View car photo", Colors.red);
+      return;
+    }
+    if (!hasPlate) {
+      Utility.snacBar("Please upload Plate Number car photo", Colors.red);
+      return;
+    }
+    final hasDicky = files["dicky_image"] != null ||
+        (isTransferredVehicle && (transferredVehicleExistingDickyImage?.isNotEmpty ?? false));
+    if (!hasDicky) {
+      Utility.snacBar("Please upload Dicky View car photo", Colors.red);
+      return;
+    }
+    final hasCarrier = files["carrier_image"] != null ||
+        (isTransferredVehicle && (transferredVehicleExistingCarrierImage?.isNotEmpty ?? false));
+    if (!hasCarrier) {
+      Utility.snacBar("Please upload Carrier View car photo", Colors.red);
       return;
     }
 
@@ -699,12 +870,20 @@ class HomeController extends GetxController {
 
     isRegisteringVehicle = true;
     update();
-    log('✅ registerVehicle: calling addVehicle API...');
+    log('✅ registerVehicle: calling addVehicle or transfer API...');
     try {
-      final response = await homePresenter.addVehicle(
-        fields: fields,
-        files: files,
-      );
+      final response = isTransferredVehicle
+          ? await homePresenter.confirmVehicleTransfer(
+              fields: {
+                ...fields,
+                if (transferredVehicleData?['_id'] != null) "vehicle_id": transferredVehicleData!['_id'].toString(),
+              },
+              files: files,
+            )
+          : await homePresenter.addVehicle(
+              fields: fields,
+              files: files,
+            );
       log('✅ registerVehicle: API returned. hasError=${response.hasError}, statusCode=${response.statusCode}');
       log('✅ registerVehicle: response.data=${response.data}');
 
@@ -892,6 +1071,8 @@ class HomeController extends GetxController {
     final pref = vehicle['vehiclePreferences'] ?? {};
 
     vehicleBrandNameController.text = info['brand_name'] ?? "";
+    vehicleOwnerNameController.text = info['vehicle_owner_name'] ?? "";
+    vehicleOwnerMobileController.text = info['vehicle_owner_mobile'] ?? "";
     vehicleNumberController.text = info['vehicle_number'] ?? "";
     
     // Sourcing, preferences
@@ -956,15 +1137,37 @@ class HomeController extends GetxController {
     rcImageFile = null;
     rentedVehicleAgreementFile = null;
 
-    update();
+    rcNumberController.text = docs['rc_number'] ?? info['rc_number'] ?? info['vehicle_number'] ?? "";
+    isRcVerified = docs['is_rc_verified'] == true || vehicle['is_rc_verified'] == true;
+    rcDetails = (docs['rc_details'] is Map)
+        ? Map<String, dynamic>.from(docs['rc_details'])
+        : (vehicle['rc_details'] is Map)
+            ? Map<String, dynamic>.from(vehicle['rc_details'])
+            : null;
+    if (rcDetails != null && rcNumberController.text.isNotEmpty) {
+      rcDetails!['rc_number'] = rcNumberController.text;
+      rcDetails!['registration_number'] = rcNumberController.text;
+      rcDetails!['vehicle_number'] = rcNumberController.text;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      update();
+    });
   }
 
   Future<void> submitVehicleUpdate(String vehicleId) async {
+    if (!isRcVerified) {
+      Utility.snacBar("Please verify RC Number before saving", Colors.red);
+      return;
+    }
     Utility.showLoader();
 
     Map<String, String> fields = {
       "brand_name": vehicleBrandNameController.text.trim(),
+      "vehicle_owner_name": vehicleOwnerNameController.text.trim(),
+      "vehicle_owner_mobile": vehicleOwnerMobileController.text.trim(),
       "vehicle_number": vehicleNumberController.text.trim(),
+      "rc_number": rcNumberController.text.trim().isNotEmpty ? rcNumberController.text.trim() : vehicleNumberController.text.trim(),
       if (selectedVehicleTypeId != null) "vehicle_type": selectedVehicleTypeId!,
       if (selectedFuelTypeId != null) "fuel_type[0]": selectedFuelTypeId!,
       "vehicle_make_year": vehicleMakeYearController.text.trim(),
@@ -976,6 +1179,8 @@ class HomeController extends GetxController {
       "fitness_expiry": fitnessExpiryController.text.trim(),
       "permit_expiry": permitExpiryController.text.trim(),
       "permit_type": selectedPermitType ?? "",
+      "is_rc_verified": isRcVerified ? "true" : "false",
+      if (rcDetails != null) "rc_details": jsonEncode(rcDetails),
     };
 
     Map<String, File> files = {};
@@ -1022,7 +1227,13 @@ class HomeController extends GetxController {
 
   void clearAddVehicleFields() {
     vehicleBrandNameController.clear();
+    vehicleOwnerNameController.clear();
+    vehicleOwnerMobileController.clear();
     vehicleNumberController.clear();
+    rcNumberController.clear();
+    isRcVerified = false;
+    rcDetails = null;
+    isRcVerifying = false;
     vehicleMakeYearController.clear();
     insuranceExpiryController.clear();
     fitnessExpiryController.clear();
@@ -1050,8 +1261,432 @@ class HomeController extends GetxController {
     pucDocumentFile = null;
     rcImageFile = null;
     rentedVehicleAgreementFile = null;
+
+    addVehicleCurrentStep = 1;
+    isCheckingVehicleOwnerMobile = false;
+    vehicleTransferCheckResult = null;
+    isSendingVehicleTransferOtp = false;
+    isVehicleTransferOtpSent = false;
+    isVerifyingVehicleTransferOtp = false;
+    vehicleTransferOtpController.clear();
+    isTransferredVehicle = false;
+    transferredVehicleData = null;
+    transferredVehicleExistingFrontImage = null;
+    transferredVehicleExistingBackImage = null;
+    transferredVehicleExistingLeftImage = null;
+    transferredVehicleExistingRightImage = null;
+    transferredVehicleExistingInteriorImage = null;
+    transferredVehicleExistingPlateImage = null;
+    transferredVehicleExistingDickyImage = null;
+    transferredVehicleExistingCarrierImage = null;
+    transferredVehicleExistingInsuranceDoc = null;
+    transferredVehicleExistingFitnessDoc = null;
+    transferredVehicleExistingPermitDoc = null;
+    transferredVehicleExistingPucDoc = null;
+    transferredVehicleExistingRcImage = null;
+    transferredVehicleExistingAgreement = null;
     
     update();
+  }
+
+  Future<void> verifyVehicleRC([String? inputRcNumber]) async {
+    final rcNum = (inputRcNumber ?? rcNumberController.text).trim().isNotEmpty
+        ? (inputRcNumber ?? rcNumberController.text).trim()
+        : vehicleNumberController.text.trim();
+
+    if (rcNum.isEmpty) {
+      Utility.snacBar("Please enter RC / Vehicle number", Colors.red);
+      return;
+    }
+
+    final cleanNumber = rcNum.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    if (cleanNumber.length < 4 || cleanNumber.length > 13) {
+      Utility.snacBar("Invalid RC / Vehicle number format", Colors.red);
+      return;
+    }
+
+    isRcVerifying = true;
+    rcVehicleTypeError = null;
+    update();
+    try {
+      if (fuelTypesList.isEmpty) {
+        try {
+          await fetchFuelTypes();
+        } catch (_) {}
+      }
+
+      final fullUrl = '${ApiWrapper.socketUrl}/vendor/verify/rc';
+      final response = await homePresenter.homeUsecases.apiWrapper.makeRequest(
+        fullUrl,
+        Request.postApiWithoutBaseURL,
+        {"vehicle_number": cleanNumber},
+        false,
+      );
+      if (!response.hasError) {
+        final decoded = jsonDecode(response.data);
+        final data = decoded['Data'] ?? decoded['data'] ?? {};
+        rcDetails = data is Map ? Map<String, dynamic>.from(data) : null;
+
+        // Auto-fill owner name
+        final ownerName = (data['vehicle_owner_name'] ?? data['owner_name'] ?? data['registered_owner'] ?? '').toString().trim();
+        if (ownerName.isNotEmpty && ownerName != 'N/A') {
+          vehicleOwnerNameController.text = ownerName;
+        }
+
+        // Auto-fill brand / maker model (prioritize model_name)
+        final makerModel = (data['model_name'] ?? data['brand_name'] ?? data['maker_model'] ?? '').toString().trim();
+        if (makerModel.isNotEmpty && makerModel != 'N/A') {
+          vehicleBrandNameController.text = makerModel;
+        }
+
+        // Auto-fill manufacturing year
+        String mfgYear = (data['manufacturing_year'] ?? data['registration_date'] ?? '').toString().trim();
+        if (mfgYear.isNotEmpty && mfgYear != 'N/A') {
+          final yearMatch = RegExp(r'\b(19\d{2}|20\d{2})\b').firstMatch(mfgYear);
+          if (yearMatch != null) {
+            vehicleMakeYearController.text = yearMatch.group(0)!;
+          }
+        }
+
+        // Auto-fill fuel type (prioritize CNG)
+        final rawFuel = (data['fuel_type'] ?? '').toString().trim().toUpperCase();
+        if (rawFuel.contains('CNG')) {
+          final cngMatch = fuelTypesList.firstWhereOrNull((item) =>
+              (item['name'] ?? '').toString().toUpperCase().contains('CNG'));
+          if (cngMatch != null) {
+            selectedFuelTypeId = (cngMatch['_id'] ?? cngMatch['id'])?.toString();
+            selectedFuelType = cngMatch['name']?.toString();
+          } else {
+            selectedFuelType = 'CNG';
+          }
+        }
+        if (selectedFuelTypeId == null && !rawFuel.contains('CNG')) {
+          if (data['matched_fuel_type_ids'] != null && (data['matched_fuel_type_ids'] as List).isNotEmpty) {
+            selectedFuelTypeId = data['matched_fuel_type_ids'][0].toString();
+            final m = fuelTypesList.firstWhereOrNull((item) =>
+                (item['_id'] ?? item['id'])?.toString() == selectedFuelTypeId);
+            if (m != null) selectedFuelType = m['name']?.toString();
+          }
+          if (selectedFuelTypeId == null && rawFuel.isNotEmpty && rawFuel != 'N/A' && fuelTypesList.isNotEmpty) {
+            final match = fuelTypesList.firstWhereOrNull((item) {
+              final fName = (item['name'] ?? '').toString().toUpperCase().trim();
+              return fName == rawFuel || fName.contains(rawFuel) || rawFuel.contains(fName);
+            });
+            if (match != null) {
+              selectedFuelTypeId = (match['_id'] ?? match['id'])?.toString();
+              selectedFuelType = match['name']?.toString();
+            } else {
+              final parts = rawFuel.split(RegExp(r'[/, -]+'));
+              for (final part in parts) {
+                if (part.isEmpty) continue;
+                final tokenMatch = fuelTypesList.firstWhereOrNull((item) {
+                  final fName = (item['name'] ?? '').toString().toUpperCase().trim();
+                  return fName == part || fName.contains(part) || part.contains(fName);
+                });
+                if (tokenMatch != null) {
+                  selectedFuelTypeId = (tokenMatch['_id'] ?? tokenMatch['id'])?.toString();
+                  selectedFuelType = tokenMatch['name']?.toString();
+                  break;
+                }
+              }
+            }
+          }
+        }
+        if (selectedFuelType == null && rawFuel.isNotEmpty && rawFuel != 'N/A') {
+          selectedFuelType = rawFuel;
+        }
+        if (selectedFuelTypeId == null && selectedFuelType != null && fuelTypesList.isNotEmpty) {
+          final m = fuelTypesList.firstWhereOrNull((item) =>
+              (item['name'] ?? '').toString().toUpperCase().trim() == selectedFuelType!.toUpperCase().trim());
+          if (m != null) {
+            selectedFuelTypeId = (m['_id'] ?? m['id'])?.toString();
+          }
+        }
+
+        // Auto-fill insurance expiry if empty
+        final insExpiry = (data['insurance_expiry'] ?? data['insurance_upto'] ?? '').toString();
+        if (insExpiry.isNotEmpty && insuranceExpiryController.text.trim().isEmpty) {
+          insuranceExpiryController.text = insExpiry;
+        }
+
+        // Auto-fill fitness expiry if empty
+        final fitExpiry = (data['fitness_upto'] ?? data['fit_up_to'] ?? '').toString();
+        if (fitExpiry.isNotEmpty && fitnessExpiryController.text.trim().isEmpty) {
+          fitnessExpiryController.text = fitExpiry;
+        }
+
+        // Keep rcNumberController updated
+        rcNumberController.text = cleanNumber;
+
+        // Ensure RC number is set in rcDetails
+        if (rcDetails != null) {
+          rcDetails!['rc_number'] = cleanNumber;
+          rcDetails!['registration_number'] = cleanNumber;
+          rcDetails!['vehicle_number'] = cleanNumber;
+        }
+
+        // Auto-assign vehicle type from verified RC or show unsupported warning
+        if (data['is_supported'] == false || data['vehicle_type_id'] == null) {
+          isRcVerified = false;
+          selectedVehicleTypeId = null;
+          selectedVehicleType = null;
+          rcVehicleTypeError = "This brand is not verified by bambam";
+        } else {
+          isRcVerified = true;
+          rcVehicleTypeError = null;
+          selectedVehicleTypeId = data['vehicle_type_id'].toString();
+          selectedVehicleType = data['vehicle_type_name']?.toString() ?? selectedVehicleType;
+        }
+
+        if (Get.context != null && rcDetails != null) {
+          showRcDetailsDialog(Get.context!, rcDetails!, cleanNumber);
+        }
+        if (isRcVerified) {
+          Utility.snacBar("RC verified successfully", Colors.green);
+        } else {
+          Utility.snacBar("This brand is not verified by bambam", Colors.red);
+        }
+        update();
+      } else {
+        isRcVerified = false;
+        rcVehicleTypeError = "This brand is not verified by bambam";
+        final decoded = jsonDecode(response.data);
+        Utility.snacBar(decoded['Message'] ?? decoded['message'] ?? 'This brand is not verified by bambam', Colors.red);
+      }
+    } catch (e) {
+      isRcVerified = false;
+      rcVehicleTypeError = "This brand is not verified by bambam";
+      Utility.snacBar("This brand is not verified by bambam", Colors.red);
+    } finally {
+      isRcVerifying = false;
+      update();
+    }
+  }
+
+  void populateVehicleFormFromTransferred(Map<String, dynamic> v) {
+    vehicleBrandNameController.text = v['brand_name'] ?? "";
+    vehicleOwnerNameController.text = v['vehicle_owner_name'] ?? "";
+    vehicleOwnerMobileController.text = v['vehicle_owner_mobile'] ?? "";
+    vehicleNumberController.text = v['vehicle_number'] ?? "";
+    rcNumberController.text = v['rc_number'] ?? v['vehicle_number'] ?? "";
+    vehicleMakeYearController.text = (v['vehicle_make_year'] ?? v['registration_year'] ?? "").toString();
+
+    // Type & Fuel
+    if (v['vehicle_type'] != null) {
+      if (v['vehicle_type'] is Map) {
+        selectedVehicleTypeId = v['vehicle_type']['_id']?.toString();
+        selectedVehicleType = v['vehicle_type']['name']?.toString();
+      } else {
+        selectedVehicleTypeId = v['vehicle_type']?.toString();
+      }
+    }
+    if (vehicleTypesList.isNotEmpty && selectedVehicleTypeId != null) {
+      final match = vehicleTypesList.firstWhereOrNull((item) =>
+          item['_id']?.toString() == selectedVehicleTypeId ||
+          (selectedVehicleType != null &&
+              item['name']?.toString().toLowerCase() ==
+                  selectedVehicleType!.toLowerCase()));
+      if (match != null) {
+        selectedVehicleTypeId = match['_id']?.toString();
+        selectedVehicleType = match['name']?.toString();
+      }
+    }
+
+    if (v['fuel_type'] != null) {
+      if (v['fuel_type'] is List && (v['fuel_type'] as List).isNotEmpty) {
+        final firstFuel = (v['fuel_type'] as List)[0];
+        if (firstFuel is Map) {
+          selectedFuelTypeId = firstFuel['_id']?.toString();
+          selectedFuelType = firstFuel['name']?.toString();
+        } else {
+          selectedFuelTypeId = firstFuel?.toString();
+        }
+      } else if (v['fuel_type'] is Map) {
+        selectedFuelTypeId = v['fuel_type']['_id']?.toString();
+        selectedFuelType = v['fuel_type']['name']?.toString();
+      } else {
+        selectedFuelTypeId = v['fuel_type']?.toString();
+      }
+    }
+    if (fuelTypesList.isNotEmpty && selectedFuelTypeId != null) {
+      final match = fuelTypesList.firstWhereOrNull((item) =>
+          item['_id']?.toString() == selectedFuelTypeId ||
+          (selectedFuelType != null &&
+              item['name']?.toString().toLowerCase() ==
+                  selectedFuelType!.toLowerCase()));
+      if (match != null) {
+        selectedFuelTypeId = match['_id']?.toString();
+        selectedFuelType = match['name']?.toString();
+      }
+    }
+
+    // Preferences
+    selectedSourcing = v['sourcing'] ?? "Owner Vehicle";
+    selectedPetFriendly = v['pet_friendly'] ?? "No";
+    selectedLuggageCarrier = v['luggage_carrier'] ?? "No";
+    selectedWorkingRearSeatBelts = v['working_rear_seat_belts'] ?? "No";
+    selectedPermitType = v['permit_type'] ?? "State Permit";
+
+    // Expiries
+    fitnessExpiryController.text = v['fitness_expiry'] ?? "";
+    insuranceExpiryController.text = v['insurance_expiry'] ?? "";
+    permitExpiryController.text = v['permit_expiry'] ?? "";
+
+    // Existing Image URLs/filenames for previews and backend reuse
+    transferredVehicleExistingFrontImage = v['front_image'];
+    transferredVehicleExistingBackImage = v['back_image'];
+    transferredVehicleExistingLeftImage = v['left_image'];
+    transferredVehicleExistingRightImage = v['right_image'];
+    transferredVehicleExistingInteriorImage = v['interior_image'];
+    transferredVehicleExistingPlateImage = v['number_plate_image'];
+    transferredVehicleExistingDickyImage = v['dicky_image'];
+    transferredVehicleExistingCarrierImage = v['carrier_image'];
+    transferredVehicleExistingInsuranceDoc = v['insurance_document'];
+    transferredVehicleExistingFitnessDoc = v['fitness_document'];
+    transferredVehicleExistingPermitDoc = v['permit_document'];
+    transferredVehicleExistingPucDoc = v['puc_document'];
+    transferredVehicleExistingRcImage = v['rc_image'];
+    transferredVehicleExistingAgreement = v['rented_vehicle_agreement'];
+
+    // RC Verification
+    isRcVerified = true;
+    if (v['rc_details'] != null && v['rc_details'] is Map) {
+      rcDetails = Map<String, dynamic>.from(v['rc_details']);
+    } else {
+      rcDetails = {
+        "rc_number": rcNumberController.text,
+        "owner_name": vehicleOwnerNameController.text,
+      };
+    }
+
+    update();
+  }
+
+  Future<void> checkVehicleOwnerMobileForTransfer() async {
+    final phone = vehicleOwnerMobileController.text.trim();
+    if (phone.length != 10) {
+      Utility.snacBar("Owner mobile number must be exactly 10 digits", Colors.red);
+      return;
+    }
+    isCheckingVehicleOwnerMobile = true;
+    vehicleTransferCheckResult = null;
+    isVehicleTransferOtpSent = false;
+    vehicleTransferOtpController.clear();
+    update();
+
+    try {
+      final fullUrl = '${ApiWrapper.socketUrl}/vendor/vehicle/vendor-check-mobile';
+      final response = await homePresenter.homeUsecases.apiWrapper.makeRequest(
+        fullUrl,
+        Request.postApiWithoutBaseURL,
+        {"mobile": phone},
+        false,
+      );
+      if (!response.hasError) {
+        final decoded = jsonDecode(response.data);
+        final data = decoded['Data'] ?? decoded['data'] ?? {};
+        if (data['isOwnVehicle'] == true) {
+          vehicleTransferCheckResult = Map<String, dynamic>.from(data);
+          Utility.snacBar(data['message'] ?? "This vehicle is already in your vehicle list.", Colors.blue);
+        } else if (data['belongsToOtherVendor'] == true) {
+          vehicleTransferCheckResult = Map<String, dynamic>.from(data);
+          Utility.snacBar(data['message'] ?? "Vehicle registered with another vendor. OTP required.", Colors.orange);
+        } else {
+          // New vehicle owner: auto advance to Step 2
+          isTransferredVehicle = false;
+          transferredVehicleData = null;
+          addVehicleCurrentStep = 2;
+          vehicleOwnerMobileController.text = phone;
+          Utility.snacBar("New vehicle owner. Please fill vehicle details.", Colors.green);
+        }
+      } else {
+        try {
+          final decoded = jsonDecode(response.data);
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Error checking mobile", Colors.red);
+        } catch (_) {
+          Utility.snacBar("Error checking mobile number", Colors.red);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Error checking mobile: $e", Colors.red);
+    } finally {
+      isCheckingVehicleOwnerMobile = false;
+      update();
+    }
+  }
+
+  Future<void> sendVehicleTransferOtp() async {
+    final phone = vehicleOwnerMobileController.text.trim();
+    isSendingVehicleTransferOtp = true;
+    update();
+    try {
+      final fullUrl = '${ApiWrapper.socketUrl}/vendor/vehicle/transfer/send-otp';
+      final response = await homePresenter.homeUsecases.apiWrapper.makeRequest(
+        fullUrl,
+        Request.postApiWithoutBaseURL,
+        {"vehicle_owner_mobile": phone},
+        false,
+      );
+      if (!response.hasError) {
+        isVehicleTransferOtpSent = true;
+        Utility.snacBar("OTP sent to vehicle owner's mobile number!", Colors.green);
+      } else {
+        try {
+          final decoded = jsonDecode(response.data);
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Failed to send OTP", Colors.red);
+        } catch (_) {
+          Utility.snacBar("Failed to send OTP", Colors.red);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Failed to send OTP: $e", Colors.red);
+    } finally {
+      isSendingVehicleTransferOtp = false;
+      update();
+    }
+  }
+
+  Future<void> verifyVehicleTransferOtp() async {
+    final otp = vehicleTransferOtpController.text.trim();
+    final phone = vehicleOwnerMobileController.text.trim();
+    if (otp.length < 5) {
+      Utility.snacBar("Please enter valid OTP", Colors.red);
+      return;
+    }
+    isVerifyingVehicleTransferOtp = true;
+    update();
+    try {
+      final fullUrl = '${ApiWrapper.socketUrl}/vendor/vehicle/transfer/verify-otp';
+      final response = await homePresenter.homeUsecases.apiWrapper.makeRequest(
+        fullUrl,
+        Request.postApiWithoutBaseURL,
+        {"vehicle_owner_mobile": phone, "otp": otp},
+        false,
+      );
+      if (!response.hasError) {
+        final decoded = jsonDecode(response.data);
+        final data = decoded['Data'] ?? decoded['data'] ?? {};
+        final vehicle = Map<String, dynamic>.from(data['vehicle'] ?? {});
+
+        isTransferredVehicle = true;
+        transferredVehicleData = vehicle;
+        populateVehicleFormFromTransferred(vehicle);
+        addVehicleCurrentStep = 2;
+        Utility.snacBar("Vehicle verified! All details and documents loaded. ✅", Colors.green);
+      } else {
+        try {
+          final decoded = jsonDecode(response.data);
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Invalid OTP", Colors.red);
+        } catch (_) {
+          Utility.snacBar("Invalid OTP", Colors.red);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Error verifying OTP: $e", Colors.red);
+    } finally {
+      isVerifyingVehicleTransferOtp = false;
+      update();
+    }
   }
 
   void toggleLanguage(dynamic language) {
@@ -1144,6 +1779,16 @@ class HomeController extends GetxController {
     verifiedDriverAadhaar = '';
     driverPanNumberController.clear();
     driverAadhaarNumberController.clear();
+
+    addDriverCurrentStep = 1;
+    isCheckingDriverMobile = false;
+    driverTransferCheckResult = null;
+    isSendingTransferOtp = false;
+    isTransferOtpSent = false;
+    transferOtpController.clear();
+    isVerifyingTransferOtp = false;
+    isTransferredDriver = false;
+    transferredDriverData = null;
     update();
   }
 
@@ -1218,6 +1863,10 @@ class HomeController extends GetxController {
     }
     if (!isDriverAadhaarVerified) {
       Utility.snacBar("Please verify Aadhaar number before saving", Colors.red);
+      return;
+    }
+    if (driverMobileController.text.trim().length != 10) {
+      Utility.snacBar("Mobile number must be exactly 10 digits", Colors.red);
       return;
     }
 
@@ -1534,6 +2183,132 @@ class HomeController extends GetxController {
     );
   }
 
+  Future<void> checkDriverMobileForTransfer() async {
+    final phone = driverMobileController.text.trim();
+    if (phone.length != 10) {
+      Utility.snacBar("Mobile number must be exactly 10 digits", Colors.red);
+      return;
+    }
+    isCheckingDriverMobile = true;
+    driverTransferCheckResult = null;
+    isTransferOtpSent = false;
+    transferOtpController.clear();
+    update();
+
+    try {
+      final fullUrl = '${ApiWrapper.socketUrl}/driver/vendor-check-mobile';
+      final response = await homePresenter.homeUsecases.apiWrapper.makeRequest(
+        fullUrl,
+        Request.postApiWithoutBaseURL,
+        {"mobile": phone},
+        false,
+      );
+      if (!response.hasError) {
+        final decoded = jsonDecode(response.data);
+        final data = decoded['Data'] ?? decoded['data'] ?? {};
+        if (data['isOwnDriver'] == true) {
+          driverTransferCheckResult = Map<String, dynamic>.from(data);
+          Utility.snacBar(data['message'] ?? "Driver is already registered in your driver list.", Colors.blue);
+        } else if (data['belongsToOtherVendor'] == true) {
+          driverTransferCheckResult = Map<String, dynamic>.from(data);
+          Utility.snacBar(data['message'] ?? "Driver belongs to another vendor. OTP required.", Colors.orange);
+        } else {
+          // New driver
+          isTransferredDriver = false;
+          transferredDriverData = null;
+          addDriverCurrentStep = 2;
+          Utility.snacBar("New driver. Continue to enter details.", Colors.green);
+        }
+      } else {
+        try {
+          final decoded = jsonDecode(response.data);
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Error checking mobile", Colors.red);
+        } catch (_) {
+          Utility.snacBar("Error checking mobile number", Colors.red);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Error checking mobile: $e", Colors.red);
+    } finally {
+      isCheckingDriverMobile = false;
+      update();
+    }
+  }
+
+  Future<void> sendTransferOtp() async {
+    final phone = driverMobileController.text.trim();
+    isSendingTransferOtp = true;
+    update();
+    try {
+      final fullUrl = '${ApiWrapper.socketUrl}/driver/transfer/send-otp';
+      final response = await homePresenter.homeUsecases.apiWrapper.makeRequest(
+        fullUrl,
+        Request.postApiWithoutBaseURL,
+        {"driver_mobile": phone},
+        false,
+      );
+      if (!response.hasError) {
+        isTransferOtpSent = true;
+        Utility.snacBar("OTP sent to driver's mobile number!", Colors.green);
+      } else {
+        try {
+          final decoded = jsonDecode(response.data);
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Failed to send OTP", Colors.red);
+        } catch (_) {
+          Utility.snacBar("Failed to send OTP", Colors.red);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Failed to send OTP: $e", Colors.red);
+    } finally {
+      isSendingTransferOtp = false;
+      update();
+    }
+  }
+
+  Future<void> verifyTransferOtp() async {
+    final otp = transferOtpController.text.trim();
+    final phone = driverMobileController.text.trim();
+    if (otp.length < 5) {
+      Utility.snacBar("Please enter valid OTP", Colors.red);
+      return;
+    }
+    isVerifyingTransferOtp = true;
+    update();
+    try {
+      final fullUrl = '${ApiWrapper.socketUrl}/driver/transfer/verify-otp';
+      final response = await homePresenter.homeUsecases.apiWrapper.makeRequest(
+        fullUrl,
+        Request.postApiWithoutBaseURL,
+        {"driver_mobile": phone, "otp": otp},
+        false,
+      );
+      if (!response.hasError) {
+        final decoded = jsonDecode(response.data);
+        final data = decoded['Data'] ?? decoded['data'] ?? {};
+        final driver = Map<String, dynamic>.from(data['driver'] ?? {});
+
+        isTransferredDriver = true;
+        transferredDriverData = driver;
+        populateDriverForm(driver);
+        addDriverCurrentStep = 2;
+        Utility.snacBar("Driver verified! All details loaded. ✅", Colors.green);
+      } else {
+        try {
+          final decoded = jsonDecode(response.data);
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Invalid OTP", Colors.red);
+        } catch (_) {
+          Utility.snacBar("Invalid OTP", Colors.red);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Error verifying OTP: $e", Colors.red);
+    } finally {
+      isVerifyingTransferOtp = false;
+      update();
+    }
+  }
+
   Future<void> registerDriver() async {
     // Basic validation
     if (driverNameController.text.isEmpty ||
@@ -1543,25 +2318,31 @@ class HomeController extends GetxController {
       Utility.snacBar("Please fill all required fields", Colors.red);
       return;
     }
-
-    // Photo validation
-    if (driverPhotoFile == null || dlPhotoFile == null || driverPanPhotoFile == null || driverAadhaarPhotoFile == null) {
-      Utility.snacBar("Please select all 4 required driver and document photos", Colors.red);
+    if (driverMobileController.text.trim().length != 10) {
+      Utility.snacBar("Mobile number must be exactly 10 digits", Colors.red);
       return;
     }
 
-    // Document verification checks
-    if (!isDriverDlVerified) {
-      Utility.snacBar("Please verify DL number before saving", Colors.red);
-      return;
-    }
-    if (!isDriverPanVerified) {
-      Utility.snacBar("Please verify PAN number before saving", Colors.red);
-      return;
-    }
-    if (!isDriverAadhaarVerified) {
-      Utility.snacBar("Please verify Aadhaar number before saving", Colors.red);
-      return;
+    // Photo validation (only required if not transferred driver)
+    if (!isTransferredDriver) {
+      if (driverPhotoFile == null || dlPhotoFile == null || driverPanPhotoFile == null || driverAadhaarPhotoFile == null) {
+        Utility.snacBar("Please select all 4 required driver and document photos", Colors.red);
+        return;
+      }
+
+      // Document verification checks
+      if (!isDriverDlVerified) {
+        Utility.snacBar("Please verify DL number before saving", Colors.red);
+        return;
+      }
+      if (!isDriverPanVerified) {
+        Utility.snacBar("Please verify PAN number before saving", Colors.red);
+        return;
+      }
+      if (!isDriverAadhaarVerified) {
+        Utility.snacBar("Please verify Aadhaar number before saving", Colors.red);
+        return;
+      }
     }
 
     final fields = {
@@ -1583,6 +2364,11 @@ class HomeController extends GetxController {
       ),
     };
 
+    if (isTransferredDriver && transferredDriverData != null) {
+      fields['is_transfer'] = 'true';
+      fields['transfer_driver_id'] = (transferredDriverData!['_id'] ?? '').toString();
+    }
+
     final files = <String, File>{};
     if (driverPhotoFile != null) files['driver_photo'] = driverPhotoFile!;
     if (dlPhotoFile != null) files['DL_photo'] = dlPhotoFile!;
@@ -1601,7 +2387,7 @@ class HomeController extends GetxController {
         Get.back(); // Close AddNewdriversScreen
         // Refresh list WITHOUT a blocking dialog
         getDrivers(isLoading: false);
-        Utility.snacBar("Driver added successfully", Colors.green);
+        Utility.snacBar(isTransferredDriver ? "Driver transferred successfully" : "Driver added successfully", Colors.green);
       } else {
         Utility.snacBar(
           decoded['Message'] ?? "Failed to add driver",
@@ -1708,6 +2494,8 @@ class HomeController extends GetxController {
       _startDepositPolling();
       // ✅ Load ringtone settings on startup so AudioService can use them when socket fires
       getRingtoneSettings();
+      // ✅ Fetch drivers on startup so home screen counts match Manage Drivers page
+      getDrivers(isLoading: false);
     });
 
     driverScrollController.addListener(() {
@@ -2665,6 +3453,10 @@ class HomeController extends GetxController {
       );
     }
 
+    if (drivers.isEmpty) {
+      getDrivers(isLoading: false);
+    }
+
     update();
   }
 
@@ -2918,7 +3710,7 @@ class HomeController extends GetxController {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Text(
-                  "To continue using Bambam services, please clear your pending deposit amount. This helps us ensure secure and smooth operations for all partner.",
+                  "To continue using Bambam services, please clear your pending deposit amount. This helps us ensure secure and smooth operations for all vendors.",
                   textAlign: TextAlign.center,
                   style: Styles.g5txtColor40012.copyWith(
                     fontSize: 14,

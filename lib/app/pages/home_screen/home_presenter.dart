@@ -370,6 +370,14 @@ class HomePresenter {
     return homeUsecases.addVehicle(fields: fields, files: files);
   }
 
+  /// 🚗 Confirm Vehicle Transfer (Multipart)
+  Future<ResponseModel> confirmVehicleTransfer({
+    required Map<String, String> fields,
+    required Map<String, File> files,
+  }) {
+    return homeUsecases.confirmVehicleTransfer(fields: fields, files: files);
+  }
+
   /// 🚗 Fetch Fuel Types
   Future<ResponseModel> fetchFuelTypes() {
     return homeUsecases.fetchFuelTypes();

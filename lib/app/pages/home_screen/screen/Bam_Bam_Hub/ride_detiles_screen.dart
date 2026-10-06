@@ -488,62 +488,125 @@ class _RideDetilesScreenState extends State<RideDetilesScreen> {
                       final totalFareDisplay = isCompleted && fb != null && fb['final_payable_amount'] != null
                           ? formatP(fb['final_payable_amount'])
                           : safeText(booking['payment_summary']?['total_fare']);
-                      
+                      final totalFareNum = double.tryParse(totalFareDisplay) ?? 0.0;
+
+                      final String pMode = safeText(
+                        vendorRequest['payment_mode'] ??
+                            booking['payment_mode'] ??
+                            booking['payment_summary']?['payment_mode'] ??
+                            "Cash",
+                      );
+                      final bool isCash = pMode.toLowerCase() == 'cash' || booking['payment_type'] == 0;
+
+                      final num rawAdvPercent = double.tryParse((booking['payment_summary']?['advance_percent'] ?? 0).toString()) ?? 0;
+                      final num rawAdvPaid = double.tryParse((booking['payment_summary']?['advance_paid'] ?? 0).toString()) ?? 0;
+
+                      final num advPercent = isCash ? 0 : rawAdvPercent;
+                      final num advPaid = isCash ? 0 : (rawAdvPaid > 0 ? rawAdvPaid : (advPercent > 0 ? ((totalFareNum * advPercent) / 100).round() : 0));
+
+                      num collect = 0;
+                      if (isCash) {
+                        collect = isCompleted && fb != null && fb['final_payable_amount'] != null
+                            ? double.tryParse(fb['final_payable_amount'].toString()) ?? 0
+                            : double.tryParse((booking['payment_summary']?['amount_collect_from_customer'] ?? booking['pending_payment'] ?? vendorRequest['collect_cash_amount'] ?? totalFareNum).toString()) ?? totalFareNum;
+                      } else {
+                        if (advPercent >= 100) {
+                          collect = totalFareNum > advPaid ? (totalFareNum - advPaid) : 0;
+                        } else if (advPaid > 0) {
+                          collect = totalFareNum > advPaid ? (totalFareNum - advPaid) : 0;
+                        } else {
+                          collect = isCompleted && fb != null && fb['final_payable_amount'] != null
+                              ? double.tryParse(fb['final_payable_amount'].toString()) ?? 0
+                              : double.tryParse((booking['payment_summary']?['amount_collect_from_customer'] ?? totalFareNum).toString()) ?? totalFareNum;
+                        }
+                      }
+
+                      final num commAmount = double.tryParse((booking['payment_summary']?['commission_amount'] ?? 0).toString()) ?? 0;
+                      num finalAmount = double.tryParse((booking['payment_summary']?['final_trip_fare'] ?? 0).toString()) ?? 0;
+                      if (commAmount > 0 && (finalAmount >= totalFareNum || finalAmount <= 0)) {
+                        finalAmount = totalFareNum > commAmount ? (totalFareNum - commAmount) : 0;
+                      }
+
                       return Column(
                         children: [
                           _price(
                             "Total Fare",
                             "₹$totalFareDisplay",
                           ),
-                          if (booking['payment_summary']?['advance_paid'] != null && booking['payment_summary']['advance_paid'].toString() != '0')
-                            _price(
-                              "Advance Paid",
-                              "(${safeText(booking['payment_summary']?['advance_percent'])}%)₹${safeText(booking['payment_summary']?['advance_paid'])}",
-                            ),
+                          _price(
+                            advPercent > 0 ? "Advance Paid ($advPercent%)" : "Advance Paid (0%)",
+                            "₹${formatP(advPaid)}",
+                          ),
                           _price(
                             "Payment Mode",
-                            safeText(
-                              vendorRequest['payment_mode'] ??
-                                  booking['payment_mode'] ?? "Cash",
-                            ),
+                            isCash ? "Cash" : pMode,
                           ),
-                          (() {
-                            final collect = isCompleted && fb != null && fb['final_payable_amount'] != null
-                                ? double.tryParse(fb['final_payable_amount'].toString()) ?? 0
-                                : double.tryParse((booking['payment_summary']?['amount_collect_from_customer'] ?? booking['pending_payment'] ?? vendorRequest['collect_cash_amount'] ?? booking['payment_summary']?['total_fare'] ?? 0).toString()) ?? 0;
-                            if (collect > 0) {
-                              return _price(
-                                "Amount Collect From Customer",
-                                "₹${formatP(collect)}",
-                                valueColor: ColorsValue.redColor,
-                                bold: true,
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          })(),
+                          if (collect > 0)
+                            _price(
+                              "Amount Collect From Customer",
+                              "₹${formatP(collect)}",
+                              valueColor: ColorsValue.redColor,
+                              bold: true,
+                            ),
+                          if (commAmount > 0)
+                            _price(
+                              "Bam Bam Commission",
+                              "-₹${formatP(commAmount)}",
+                              valueColor: ColorsValue.greenColor,
+                              bold: true,
+                            ),
+                          const Divider(),
+                          _price(
+                            "Final Trip Fare",
+                            "₹${formatP(finalAmount)}",
+                            bold: true,
+                            valueColor: ColorsValue.greenColor,
+                          ),
                         ],
                       );
                     }),
-                    if (waitingChargeVal > 0)
-                      _price(
-                        "Waiting Charges ($totalWaitingMins mins)",
-                        "₹${waitingChargeVal.round()}",
-                      ),
-                    _price(
-                      "Bam Bam Commission",
-                      "-₹${safeText(booking['payment_summary']?['commission_amount'])}",
-                      valueColor: ColorsValue.greenColor,
-                      bold: true,
-                    ),
-                    const Divider(),
-                    _price(
-                      "Final Trip Fare",
-                      "₹${safeText(booking['payment_summary']?['final_trip_fare'])}",
-                      bold: true,
-                      valueColor: ColorsValue.greenColor,
-                    ),
                   ],
                 ),
+              ),
+              Builder(
+                builder: (_) {
+                  final bool isCompleted = rideStatus == 'completed' ||
+                      rideStatus == 'payment pending' ||
+                      bookingStatus.toLowerCase().contains('complete') ||
+                      bookingStatus.toLowerCase() == 'payment pending';
+                  if (!isCompleted) return const SizedBox.shrink();
+
+                  return Column(
+                    children: [
+                      Dimens.boxHeight16,
+                      CustomButton(
+                        text: "Download Invoice",
+                        leading: const Icon(
+                          Icons.download_rounded,
+                          color: ColorsValue.whiteColor,
+                          size: 20,
+                        ),
+                        backgroundColor: ColorsValue.appColor,
+                        radius: Dimens.twelve,
+                        onPressed: () {
+                          final idToUse = booking['_id']?.toString() ??
+                              vendorRequest['_id']?.toString() ??
+                              booking['booking_id']?.toString() ??
+                              '';
+                          if (idToUse.isNotEmpty) {
+                            final pdfUrl =
+                                "https://apis.bambamcabs.com/vendor/request/booking/invoice/$idToUse?role=vendor";
+                            Utility.snacBar("Opening invoice download...", ColorsValue.appColor);
+                            Utility.launchLinkURL(pdfUrl);
+                          } else {
+                            Utility.snacBar("Booking ID not found", ColorsValue.redColor);
+                          }
+                        },
+                      ),
+                      Dimens.boxHeight16,
+                    ],
+                  );
+                },
               ),
             ],
           ),
