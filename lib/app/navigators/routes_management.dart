@@ -24,7 +24,8 @@ abstract class RouteManagement {
       Get.toNamed<void>(Routes.rideDetilesScreen);
   static void gotoDriverVehicalDetiles() =>
       Get.toNamed<void>(Routes.driverVehicalDetiles);
-  static void gotoRegisterScreen() => Get.toNamed<void>(Routes.registerScreen);
+  static void gotoRegisterScreen() =>
+      Get.toNamed<void>(Routes.registerstep1Screen);
   static void gotoInRegister1() => Get.toNamed<void>(Routes.inRegister1);
   static void gotoInRegister2() => Get.toNamed<void>(Routes.inRegister2);
   static void gotoInRegister3() => Get.toNamed<void>(Routes.inRegister3);

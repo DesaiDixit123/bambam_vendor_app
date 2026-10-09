@@ -97,10 +97,10 @@ class AppPages {
       binding: HomeBinding(),
       transition: Transition.fadeIn,
     ),
-    GetPage<RegisterScreen>(
+    GetPage<Registerstep1Screen>(
       name: _Paths.registerScreen,
       transitionDuration: transitionDuration,
-      page: RegisterScreen.new,
+      page: Registerstep1Screen.new,
       binding: AuthBinding(),
       transition: Transition.fadeIn,
     ),

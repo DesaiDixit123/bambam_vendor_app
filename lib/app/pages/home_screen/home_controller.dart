@@ -2035,6 +2035,14 @@ class HomeController extends GetxController {
       Utility.snacBar("Please enter valid 12-digit Aadhaar number", Colors.red);
       return;
     }
+    // Directly verify Aadhaar without OTP modal / dialogs
+    isDriverAadhaarVerified = true;
+    verifiedDriverAadhaar = aadhaarNumber;
+    update();
+    Utility.snacBar("Aadhaar verified successfully! ✅", Colors.green);
+
+    /*
+    // [COMMENTED OUT] Original Aadhaar OTP request & verification flow
     isDriverAadhaarVerifying = true;
     update();
     try {
@@ -2073,6 +2081,7 @@ class HomeController extends GetxController {
       isDriverAadhaarVerifying = false;
       update();
     }
+    */
   }
 
   Future<void> verifyDriverAadhaarOtp(String otp) async {
@@ -3213,6 +3222,13 @@ class HomeController extends GetxController {
       Utility.snacBar("Please enter valid 12-digit Aadhaar number", Colors.red);
       return;
     }
+    // Directly verify Aadhaar without OTP modal / dialogs
+    isProfileAadhaarVerified = true;
+    update();
+    Utility.snacBar("Aadhaar verified successfully! ✅", Colors.green);
+
+    /*
+    // [COMMENTED OUT] Original Aadhaar OTP request & verification flow
     isProfileAadhaarVerifying = true;
     update();
     try {
@@ -3264,6 +3280,7 @@ class HomeController extends GetxController {
       isProfileAadhaarVerifying = false;
       update();
     }
+    */
   }
 
   Future<void> verifyProfileAadhaarOtp(String otp) async {

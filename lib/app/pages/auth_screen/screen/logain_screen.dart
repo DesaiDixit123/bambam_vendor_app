@@ -237,7 +237,7 @@ class LoginScreen extends StatelessWidget {
                   Center(
                     child: GestureDetector(
                       onTap: () {
-                        RouteManagement.gotoRegisterScreen();
+                        RouteManagement.gotoRegisterstep1Screen();
                       },
                       child: Text.rich(
                         TextSpan(

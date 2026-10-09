@@ -941,6 +941,13 @@ class AuthController extends GetxController {
       Utility.snacBar("Please enter valid 12-digit Aadhaar number", ColorsValue.redColor);
       return;
     }
+    // Directly verify Aadhaar without OTP modal / dialogs
+    isAadhaarVerified = true;
+    update();
+    Utility.snacBar("Aadhaar verified successfully! ✅", ColorsValue.greenColor);
+
+    /*
+    // [COMMENTED OUT] Original Aadhaar OTP request & verification flow
     isAadhaarVerifying = true;
     update();
     try {
@@ -992,6 +999,7 @@ class AuthController extends GetxController {
       isAadhaarVerifying = false;
       update();
     }
+    */
   }
 
   Future<void> verifyAadhaarOtp(String otp) async {
@@ -1106,6 +1114,13 @@ class AuthController extends GetxController {
       Utility.snacBar("Please enter valid 12-digit Aadhaar number", ColorsValue.redColor);
       return;
     }
+    // Directly verify Aadhaar without OTP modal / dialogs
+    isCompanyAadhaarVerified = true;
+    update();
+    Utility.snacBar("Aadhaar verified successfully! ✅", ColorsValue.greenColor);
+
+    /*
+    // [COMMENTED OUT] Original Aadhaar OTP request & verification flow
     isCompanyAadhaarVerifying = true;
     update();
     try {
@@ -1157,6 +1172,7 @@ class AuthController extends GetxController {
       isCompanyAadhaarVerifying = false;
       update();
     }
+    */
   }
 
   Future<void> verifyCompanyAadhaarOtp(String otp) async {
