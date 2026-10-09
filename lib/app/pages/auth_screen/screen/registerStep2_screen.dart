@@ -38,6 +38,10 @@ class Registerstep2Screen extends StatelessWidget {
                       return;
                     }
 
+                    if (!controller.validateCompanyBankHolderName(context)) {
+                      return;
+                    }
+
                     RouteManagement.gotoRegisterstep3Screen();
                   },
                   backgroundColor: ColorsValue.appColor,

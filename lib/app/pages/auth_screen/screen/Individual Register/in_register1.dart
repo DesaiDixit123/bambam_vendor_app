@@ -23,6 +23,10 @@ class InRegister1 extends StatelessWidget {
                 padding: Dimens.edgeInsets20_30_20_30,
                 child: CustomButton(
                   onPressed: () {
+                    if (!controller.isIndividualMobileVerified) {
+                      Get.snackbar("Verification Required", "Please verify your mobile number with OTP before proceeding");
+                      return;
+                    }
                     if (controller.fullNameController.text.isEmpty ||
                         controller.mobileNumberController.text.isEmpty ||
                         controller.gmailController.text.isEmpty ||
@@ -35,7 +39,7 @@ class InRegister1 extends StatelessWidget {
 
                     RouteManagement.gotoInRegister2();
                   },
-                  backgroundColor: ColorsValue.appColor,
+                  backgroundColor: controller.isIndividualMobileVerified ? ColorsValue.appColor : const Color(0xFFCBD5E1),
                   text: "Next",
                 ),
               ),
@@ -193,78 +197,13 @@ class InRegister1 extends StatelessWidget {
                 ),
               ),
               Dimens.boxHeight16,
-              // DOB and UPI ID
-              Row(
-                spacing: Dimens.twenty,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CustomTextFormField(
-                          style: Styles.g7txtColor70014,
-                          hintText: "Select DOB".tr,
-                          filled: true,
-                          readOnly: true,
-                          fillColor: ColorsValue.fildColos,
-                          isBorder: true,
-                          isTitle: true,
-                          isCompulsory: true,
-                          textEditingController: controller.dobController,
-                          onTap: () async {
-                            DateTime? pickedDate = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now().subtract(
-                                const Duration(days: 6570),
-                              ),
-                              firstDate: DateTime(1950),
-                              lastDate: DateTime.now(),
-                            );
-                            if (pickedDate != null) {
-                              final day = pickedDate.day.toString().padLeft(2, '0');
-                              final month = pickedDate.month.toString().padLeft(2, '0');
-                              final year = pickedDate.year;
-                              controller.dobController.text = "$day/$month/$year";
-                              controller.update();
-                            }
-                          },
-                          title: "Date of Birth".tr,
-                          hintStyle: Styles.g7txtColor40012,
-                          titleStyle: Styles.blackColor60014,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4, left: 4),
-                          child: Text(
-                            "dob_as_per_pan".tr,
-                            style: Styles.g7txtColor40012,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: CustomTextFormField(
-                      style: Styles.g7txtColor70014,
-                      hintText: "Enter UPI ID".tr,
-                      filled: true,
-                      fillColor: ColorsValue.fildColos,
-                      isBorder: true,
-                      isTitle: true,
-                      isCompulsory: true,
-                      textEditingController: controller.upiIdController,
-                      title: "UPI ID".tr,
-                      hintStyle: Styles.g7txtColor40012,
-                      titleStyle: Styles.blackColor60014,
-                    ),
-                  ),
-                ],
-              ),
-              // phoneNumner and  Email
-              Dimens.boxHeight16,
+              // Phone Number & OTP Verification
               CustomTextFormField(
                 style: Styles.g7txtColor70014,
                 hintText: "Enter Phone Number".tr,
                 filled: true,
+                keyboardType: TextInputType.phone,
+                readOnly: controller.isIndividualMobileVerified,
                 fillColor: ColorsValue.fildColos,
                 isBorder: true,
                 isTitle: true,
@@ -282,16 +221,223 @@ class InRegister1 extends StatelessWidget {
                 title: "Phone Number".tr,
                 hintStyle: Styles.g7txtColor40012,
                 titleStyle: Styles.blackColor60014,
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: controller.isIndividualMobileVerified
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.check_circle, color: Color(0xFF12724A), size: 18),
+                            const SizedBox(width: 4),
+                            const Text("Verified", style: TextStyle(color: Color(0xFF12724A), fontWeight: FontWeight.bold, fontSize: 12)),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () {
+                                controller.isIndividualMobileVerified = false;
+                                controller.individualOtpController.clear();
+                                controller.update();
+                              },
+                              child: const Text("Change", style: TextStyle(color: Colors.grey, fontSize: 11, decoration: TextDecoration.underline)),
+                            ),
+                          ],
+                        )
+                      : TextButton(
+                          onPressed: controller.isIndividualSendingOtp
+                              ? null
+                              : () => controller.sendIndividualRegistrationOtp(),
+                          child: controller.isIndividualSendingOtp
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                              : Text(
+                                  controller.isIndividualMobileOtpSent ? "Resend OTP" : "Send OTP",
+                                  style: const TextStyle(color: Color(0xFF12724A), fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                        ),
+                ),
               ),
-              Dimens.boxHeight16,
-              CustomTextFormField(
-                style: Styles.g7txtColor70014,
-                hintText: "Enter Email".tr,
-                filled: true,
-                fillColor: ColorsValue.fildColos,
-                isBorder: true,
-                isTitle: true,
-                isCompulsory: true,
+
+              // OTP Input Box (when OTP is sent and not yet verified)
+              if (!controller.isIndividualMobileVerified && controller.isIndividualMobileOtpSent) ...[
+                Dimens.boxHeight12,
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Enter 6-digit OTP sent to your number",
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Color(0xFF166534)),
+                          ),
+                          Obx(() => controller.canResendIndividualOtp.value
+                              ? GestureDetector(
+                                  onTap: controller.isIndividualSendingOtp
+                                      ? null
+                                      : () => controller.sendIndividualRegistrationOtp(),
+                                  child: const Text("Resend", style: TextStyle(color: Color(0xFF12724A), fontWeight: FontWeight.bold, fontSize: 12, decoration: TextDecoration.underline)),
+                                )
+                              : Text("Resend in ${controller.individualOtpSeconds.value}s", style: const TextStyle(color: Colors.grey, fontSize: 11))),
+                        ],
+                      ),
+                      Dimens.boxHeight10,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: TextField(
+                                controller: controller.individualOtpController,
+                                keyboardType: TextInputType.number,
+                                maxLength: 6,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 6),
+                                decoration: InputDecoration(
+                                  counterText: '',
+                                  hintText: '------',
+                                  hintStyle: const TextStyle(letterSpacing: 6, color: Colors.grey),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            height: 44,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF12724A),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                elevation: 0,
+                              ),
+                              onPressed: controller.isIndividualVerifyingOtp
+                                  ? null
+                                  : () => controller.verifyIndividualRegistrationOtp(),
+                              child: controller.isIndividualVerifyingOtp
+                                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                  : const Text("Verify OTP", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Locked state banner if mobile not verified yet
+              if (!controller.isIndividualMobileVerified) ...[
+                Dimens.boxHeight20,
+                Container(
+                  padding: Dimens.edgeInsets16,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(Dimens.twelve),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.lock_outline, color: Color(0xFFD97706), size: 24),
+                      Dimens.boxWidth12,
+                      Expanded(
+                        child: Text(
+                          "Please verify your mobile number with OTP above to unlock the rest of registration form.".tr,
+                          style: const TextStyle(
+                            color: Color(0xFF92400E),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                Dimens.boxHeight16,
+                // DOB and UPI ID
+                Row(
+                  spacing: Dimens.twenty,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomTextFormField(
+                            style: Styles.g7txtColor70014,
+                            hintText: "Select DOB".tr,
+                            filled: true,
+                            readOnly: true,
+                            fillColor: ColorsValue.fildColos,
+                            isBorder: true,
+                            isTitle: true,
+                            isCompulsory: true,
+                            textEditingController: controller.dobController,
+                            onTap: () async {
+                              DateTime? pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now().subtract(
+                                  const Duration(days: 6570),
+                                ),
+                                firstDate: DateTime(1950),
+                                lastDate: DateTime.now(),
+                              );
+                              if (pickedDate != null) {
+                                final day = pickedDate.day.toString().padLeft(2, '0');
+                                final month = pickedDate.month.toString().padLeft(2, '0');
+                                final year = pickedDate.year;
+                                controller.dobController.text = "$day/$month/$year";
+                                controller.update();
+                              }
+                            },
+                            title: "Date of Birth".tr,
+                            hintStyle: Styles.g7txtColor40012,
+                            titleStyle: Styles.blackColor60014,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, left: 4),
+                            child: Text(
+                              "dob_as_per_pan".tr,
+                              style: Styles.g7txtColor40012,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: CustomTextFormField(
+                        style: Styles.g7txtColor70014,
+                        hintText: "Enter UPI ID".tr,
+                        filled: true,
+                        fillColor: ColorsValue.fildColos,
+                        isBorder: true,
+                        isTitle: true,
+                        isCompulsory: true,
+                        textEditingController: controller.upiIdController,
+                        title: "UPI ID".tr,
+                        hintStyle: Styles.g7txtColor40012,
+                        titleStyle: Styles.blackColor60014,
+                      ),
+                    ),
+                  ],
+                ),
+                Dimens.boxHeight16,
+                // Email
+                CustomTextFormField(
+                  style: Styles.g7txtColor70014,
+                  hintText: "Enter Email".tr,
+                  filled: true,
+                  fillColor: ColorsValue.fildColos,
+                  isBorder: true,
+                  isTitle: true,
+                  isCompulsory: true,
                 textEditingController: controller.gmailController,
                 onChanged: (vaule) {
                   controller.update();
@@ -560,8 +706,9 @@ class InRegister1 extends StatelessWidget {
                 hintStyle: Styles.g7txtColor40012,
                 titleStyle: Styles.blackColor60014,
               ),
-              Dimens.boxHeight100,
             ],
+            Dimens.boxHeight100,
+          ],
           ),
         );
       },

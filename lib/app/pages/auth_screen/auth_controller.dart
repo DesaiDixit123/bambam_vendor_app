@@ -8,6 +8,7 @@ import 'package:bam_bam_vendor/app/theme/dimens.dart';
 import 'package:bam_bam_vendor/app/theme/styles.dart';
 import 'package:bam_bam_vendor/app/widgets/custom_text_form_field.dart';
 import 'package:bam_bam_vendor/app/widgets/verification_dialogs.dart';
+import 'package:bam_bam_vendor/app/utils/name_match_util.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:bam_bam_vendor/app/navigators/navigators.dart';
@@ -119,6 +120,10 @@ class AuthController extends GetxController {
   @override
   void onClose() {
     _otpTimer?.cancel();
+    _companyOtpTimer?.cancel();
+    _individualOtpTimer?.cancel();
+    companyOtpController.dispose();
+    individualOtpController.dispose();
     super.onClose();
   }
 
@@ -675,6 +680,28 @@ class AuthController extends GetxController {
   TextEditingController panNumberController = TextEditingController();
   TextEditingController gstNumberController = TextEditingController();
 
+  // ── Company Registration Mobile OTP Verification ──
+  bool isCompanyMobileVerified = false;
+  bool isCompanyMobileOtpSent = false;
+  bool isCompanySendingOtp = false;
+  bool isCompanyVerifyingOtp = false;
+  String verifiedCompanyMobile = "";
+  TextEditingController companyOtpController = TextEditingController();
+  RxInt companyOtpSeconds = 30.obs;
+  RxBool canResendCompanyOtp = false.obs;
+  Timer? _companyOtpTimer;
+
+  // ── Individual Registration Mobile OTP Verification ──
+  bool isIndividualMobileVerified = false;
+  bool isIndividualMobileOtpSent = false;
+  bool isIndividualSendingOtp = false;
+  bool isIndividualVerifyingOtp = false;
+  String verifiedIndividualMobile = "";
+  TextEditingController individualOtpController = TextEditingController();
+  RxInt individualOtpSeconds = 30.obs;
+  RxBool canResendIndividualOtp = false.obs;
+  Timer? _individualOtpTimer;
+
   Future<void> pickDocument({
     required Function(File file) onPicked,
     required TextEditingController controller,
@@ -836,6 +863,316 @@ class AuthController extends GetxController {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // 📱 REGISTRATION MOBILE OTP VERIFICATION
+  // ─────────────────────────────────────────────────────────────────────────
+
+  void startCompanyOtpTimer() {
+    _companyOtpTimer?.cancel();
+    companyOtpSeconds.value = 30;
+    canResendCompanyOtp.value = false;
+    _companyOtpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (companyOtpSeconds.value == 0) {
+        timer.cancel();
+        canResendCompanyOtp.value = true;
+      } else {
+        companyOtpSeconds.value--;
+      }
+    });
+  }
+
+  void startIndividualOtpTimer() {
+    _individualOtpTimer?.cancel();
+    individualOtpSeconds.value = 30;
+    canResendIndividualOtp.value = false;
+    _individualOtpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (individualOtpSeconds.value == 0) {
+        timer.cancel();
+        canResendIndividualOtp.value = true;
+      } else {
+        individualOtpSeconds.value--;
+      }
+    });
+  }
+
+  Future<void> sendCompanyRegistrationOtp() async {
+    final cleanMobile = mobileNumberController.text.trim().replaceAll(RegExp(r'\D'), '');
+    if (cleanMobile.length < 10) {
+      Utility.snacBar("Please enter a valid 10-digit mobile number", ColorsValue.redColor);
+      return;
+    }
+    if (persoNimageController.text.trim().isEmpty) {
+      Utility.snacBar("Please select contact person photo first", ColorsValue.redColor);
+      return;
+    }
+    if (companyPersonNameController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter contact person name first", ColorsValue.redColor);
+      return;
+    }
+    if (companyNameController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter company name first", ColorsValue.redColor);
+      return;
+    }
+
+    final mobile10 = cleanMobile.substring(cleanMobile.length - 10);
+    isCompanySendingOtp = true;
+    update();
+
+    try {
+      final response = await authPresenter.authUsecases.apiWrapper.makeRequest(
+        "register/send-otp",
+        Request.post,
+        {
+          "owner_mobile": mobile10,
+          "owner_name": companyPersonNameController.text.trim(),
+        },
+        false,
+      );
+
+      dynamic decoded = {};
+      try {
+        decoded = jsonDecode(response.data);
+      } catch (_) {}
+
+      if (!response.hasError && (decoded['IsSuccess'] == true || decoded['status'] == true)) {
+        isCompanyMobileOtpSent = true;
+        startCompanyOtpTimer();
+        Utility.snacBar("OTP sent successfully to your mobile number", ColorsValue.greenColor);
+      } else {
+        if (decoded['isAlreadyRegistered'] == true ||
+            (decoded['message'] ?? decoded['Message'] ?? '').toString().toLowerCase().contains('already registered')) {
+          if (Get.context != null) {
+            showAlreadyRegisteredDialog(Get.context!);
+          } else {
+            Utility.snacBar("You are already registered with this mobile number. Please log in.", ColorsValue.redColor);
+          }
+        } else {
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Failed to send OTP", ColorsValue.redColor);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Error sending OTP: $e", ColorsValue.redColor);
+    } finally {
+      isCompanySendingOtp = false;
+      update();
+    }
+  }
+
+  Future<void> verifyCompanyRegistrationOtp() async {
+    final cleanMobile = mobileNumberController.text.trim().replaceAll(RegExp(r'\D'), '');
+    final mobile10 = cleanMobile.length >= 10 ? cleanMobile.substring(cleanMobile.length - 10) : cleanMobile;
+    final otp = companyOtpController.text.trim();
+
+    if (otp.length != 6) {
+      Utility.snacBar("Please enter the 6-digit OTP", ColorsValue.redColor);
+      return;
+    }
+
+    isCompanyVerifyingOtp = true;
+    update();
+
+    try {
+      final response = await authPresenter.authUsecases.apiWrapper.makeRequest(
+        "register/verify-otp",
+        Request.post,
+        {
+          "owner_mobile": mobile10,
+          "otp": otp,
+        },
+        false,
+      );
+
+      dynamic decoded = {};
+      try {
+        decoded = jsonDecode(response.data);
+      } catch (_) {}
+
+      if (!response.hasError && (decoded['IsSuccess'] == true || decoded['status'] == true)) {
+        isCompanyMobileVerified = true;
+        verifiedCompanyMobile = mobile10;
+        isCompanyMobileOtpSent = false;
+        _companyOtpTimer?.cancel();
+        Utility.snacBar("Mobile number verified successfully! ✅", ColorsValue.greenColor);
+      } else {
+        if (decoded['isAlreadyRegistered'] == true ||
+            (decoded['message'] ?? decoded['Message'] ?? '').toString().toLowerCase().contains('already registered')) {
+          if (Get.context != null) {
+            showAlreadyRegisteredDialog(Get.context!);
+          } else {
+            Utility.snacBar("You are already registered with this mobile number. Please log in.", ColorsValue.redColor);
+          }
+        } else {
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Invalid OTP. Please try again.", ColorsValue.redColor);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Error verifying OTP: $e", ColorsValue.redColor);
+    } finally {
+      isCompanyVerifyingOtp = false;
+      update();
+    }
+  }
+
+  Future<void> sendIndividualRegistrationOtp() async {
+    final cleanMobile = mobileNumberController.text.trim().replaceAll(RegExp(r'\D'), '');
+    if (cleanMobile.length < 10) {
+      Utility.snacBar("Please enter a valid 10-digit mobile number", ColorsValue.redColor);
+      return;
+    }
+    if (persoNimageController.text.trim().isEmpty) {
+      Utility.snacBar("Please select contact person photo first", ColorsValue.redColor);
+      return;
+    }
+    if (fullNameController.text.trim().isEmpty) {
+      Utility.snacBar("Please enter your name first", ColorsValue.redColor);
+      return;
+    }
+
+    final mobile10 = cleanMobile.substring(cleanMobile.length - 10);
+    isIndividualSendingOtp = true;
+    update();
+
+    try {
+      final response = await authPresenter.authUsecases.apiWrapper.makeRequest(
+        "register/send-otp",
+        Request.post,
+        {
+          "owner_mobile": mobile10,
+          "owner_name": fullNameController.text.trim(),
+        },
+        false,
+      );
+
+      dynamic decoded = {};
+      try {
+        decoded = jsonDecode(response.data);
+      } catch (_) {}
+
+      if (!response.hasError && (decoded['IsSuccess'] == true || decoded['status'] == true)) {
+        isIndividualMobileOtpSent = true;
+        startIndividualOtpTimer();
+        Utility.snacBar("OTP sent successfully to your mobile number", ColorsValue.greenColor);
+      } else {
+        if (decoded['isAlreadyRegistered'] == true ||
+            (decoded['message'] ?? decoded['Message'] ?? '').toString().toLowerCase().contains('already registered')) {
+          if (Get.context != null) {
+            showAlreadyRegisteredDialog(Get.context!);
+          } else {
+            Utility.snacBar("You are already registered with this mobile number. Please log in.", ColorsValue.redColor);
+          }
+        } else {
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Failed to send OTP", ColorsValue.redColor);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Error sending OTP: $e", ColorsValue.redColor);
+    } finally {
+      isIndividualSendingOtp = false;
+      update();
+    }
+  }
+
+  Future<void> verifyIndividualRegistrationOtp() async {
+    final cleanMobile = mobileNumberController.text.trim().replaceAll(RegExp(r'\D'), '');
+    final mobile10 = cleanMobile.length >= 10 ? cleanMobile.substring(cleanMobile.length - 10) : cleanMobile;
+    final otp = individualOtpController.text.trim();
+
+    if (otp.length != 6) {
+      Utility.snacBar("Please enter the 6-digit OTP", ColorsValue.redColor);
+      return;
+    }
+
+    isIndividualVerifyingOtp = true;
+    update();
+
+    try {
+      final response = await authPresenter.authUsecases.apiWrapper.makeRequest(
+        "register/verify-otp",
+        Request.post,
+        {
+          "owner_mobile": mobile10,
+          "otp": otp,
+        },
+        false,
+      );
+
+      dynamic decoded = {};
+      try {
+        decoded = jsonDecode(response.data);
+      } catch (_) {}
+
+      if (!response.hasError && (decoded['IsSuccess'] == true || decoded['status'] == true)) {
+        isIndividualMobileVerified = true;
+        verifiedIndividualMobile = mobile10;
+        isIndividualMobileOtpSent = false;
+        _individualOtpTimer?.cancel();
+        Utility.snacBar("Mobile number verified successfully! ✅", ColorsValue.greenColor);
+      } else {
+        if (decoded['isAlreadyRegistered'] == true ||
+            (decoded['message'] ?? decoded['Message'] ?? '').toString().toLowerCase().contains('already registered')) {
+          if (Get.context != null) {
+            showAlreadyRegisteredDialog(Get.context!);
+          } else {
+            Utility.snacBar("You are already registered with this mobile number. Please log in.", ColorsValue.redColor);
+          }
+        } else {
+          Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Invalid OTP. Please try again.", ColorsValue.redColor);
+        }
+      }
+    } catch (e) {
+      Utility.snacBar("Error verifying OTP: $e", ColorsValue.redColor);
+    } finally {
+      isIndividualVerifyingOtp = false;
+      update();
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 🏛️ BANK HOLDER NAME VALIDATION
+  // ─────────────────────────────────────────────────────────────────────────
+
+  bool validateCompanyBankHolderName(BuildContext context) {
+    final holderName = bankHolderNameController.text.trim();
+    if (holderName.isEmpty) return true;
+    final personName = companyPersonNameController.text.trim();
+    final companyName = companyNameController.text.trim();
+
+    final matchesPerson = checkNameMatch(personName, holderName, type: 'person');
+    final matchesCompany = checkNameMatch(companyName, holderName, type: 'company');
+
+    if (!matchesPerson && !matchesCompany) {
+      showMismatchErrorDialog(
+        context,
+        title: "Account Holder Name Mismatch",
+        message: 'The bank account holder name "$holderName" does not match either the registered contact person name ($personName) or company name ($companyName). You cannot add bank details for another person. Please enter bank details in your registered name.',
+      );
+      return false;
+    }
+    return true;
+  }
+
+  bool validateIndividualBankHolderName(BuildContext context) {
+    final holderName = bankHolderNameController.text.trim();
+    if (holderName.isEmpty) return true;
+    final personName = fullNameController.text.trim();
+
+    final matchesPerson = checkNameMatch(personName, holderName, type: 'person');
+
+    if (!matchesPerson) {
+      showMismatchErrorDialog(
+        context,
+        title: "Account Holder Name Mismatch",
+        message: 'The bank account holder name "$holderName" does not match your registered name ($personName). You cannot add bank details for another person. Please enter bank details in your registered name.',
+      );
+      return false;
+    }
+    return true;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 🔍 INDIVIDUAL DOCUMENT VERIFICATION
+  // ─────────────────────────────────────────────────────────────────────────
+
   Future<void> verifyPAN(String panNumber) async {
     if (panNumber.trim().isEmpty) {
       Utility.snacBar("Please enter PAN number", ColorsValue.redColor);
@@ -844,9 +1181,10 @@ class AuthController extends GetxController {
     isPanVerifying = true;
     update();
     try {
+      final registeredName = fullNameController.text.trim();
       final body = {
         "pan_number": panNumber.trim().toUpperCase(),
-        "name": fullNameController.text.trim(),
+        "name": registeredName,
         "dob": _normalizeDob(dobController.text),
       };
       final response = await authPresenter.authUsecases.apiWrapper.makeRequest(
@@ -855,17 +1193,47 @@ class AuthController extends GetxController {
         body,
         false,
       );
+      dynamic decoded = {};
+      try {
+        decoded = jsonDecode(response.data);
+      } catch (_) {}
+
       if (!response.hasError) {
-        final decoded = jsonDecode(response.data);
-        isPanVerified = true;
         final data = decoded['Data'] ?? decoded['data'] ?? {};
+        final docName = (data['name'] ?? data['registered_name'] ?? data['full_name'] ?? data['name_as_per_pan'] ?? '').toString().trim();
+
+        // Strict name matching check
+        if (docName.isNotEmpty && !checkNameMatch(registeredName, docName, type: 'person')) {
+          isPanVerified = false;
+          update();
+          if (Get.context != null) {
+            showMismatchErrorDialog(
+              Get.context!,
+              title: "PAN Verification Mismatch",
+              message: 'The PAN card holder name "$docName" does not match your registered name "$registeredName". You cannot submit documents belonging to another person. Please submit the PAN card belonging to $registeredName.',
+            );
+          }
+          return;
+        }
+
+        isPanVerified = true;
         if (Get.context != null) {
           showPanDetailsDialog(Get.context!, data, themeColor: ColorsValue.appColor);
         }
         Utility.snacBar("PAN verified successfully", ColorsValue.greenColor);
       } else {
-        final decoded = jsonDecode(response.data);
-        Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? 'PAN verification failed', ColorsValue.redColor);
+        final msg = (decoded['message'] ?? decoded['Message'] ?? 'PAN verification failed').toString();
+        if (msg.toLowerCase().contains('does not match') || msg.toLowerCase().contains('registered name')) {
+          if (Get.context != null) {
+            showMismatchErrorDialog(
+              Get.context!,
+              title: "PAN Verification Mismatch",
+              message: msg,
+            );
+          }
+        } else {
+          Utility.snacBar(msg, ColorsValue.redColor);
+        }
       }
     } catch (e) {
       Utility.snacBar("Error: $e", ColorsValue.redColor);
@@ -883,23 +1251,59 @@ class AuthController extends GetxController {
     isGstVerifying = true;
     update();
     try {
+      final registeredName = fullNameController.text.trim();
       final response = await authPresenter.authUsecases.apiWrapper.makeRequest(
         "verify/gst",
         Request.post,
-        {"gst_number": gstNumber.trim().toUpperCase()},
+        {
+          "gst_number": gstNumber.trim().toUpperCase(),
+          "company_name": registeredName,
+        },
         false,
       );
+      dynamic decoded = {};
+      try {
+        decoded = jsonDecode(response.data);
+      } catch (_) {}
+
       if (!response.hasError) {
-        final decoded = jsonDecode(response.data);
-        isGstVerified = true;
         final data = decoded['Data']?['data'] ?? decoded['Data'] ?? {};
+        final tradeName = (data['trade_name'] ?? data['tradeName'] ?? data['legal_name'] ?? data['legalName'] ?? data['name'] ?? '').toString().trim();
+
+        // Strict name matching check
+        if (tradeName.isNotEmpty &&
+            !checkNameMatch(registeredName, tradeName, type: 'company') &&
+            !checkNameMatch(registeredName, tradeName, type: 'person')) {
+          isGstVerified = false;
+          update();
+          if (Get.context != null) {
+            showMismatchErrorDialog(
+              Get.context!,
+              title: "GST Verification Mismatch",
+              message: 'The GSTIN trade/legal name "$tradeName" does not match your registered name "$registeredName". You cannot submit GSTIN belonging to another business.',
+            );
+          }
+          return;
+        }
+
+        isGstVerified = true;
         if (Get.context != null) {
           showGstDetailsDialog(Get.context!, data, themeColor: ColorsValue.appColor);
         }
         Utility.snacBar("GST verified successfully", ColorsValue.greenColor);
       } else {
-        final decoded = jsonDecode(response.data);
-        Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? 'GST verification failed', ColorsValue.redColor);
+        final msg = (decoded['message'] ?? decoded['Message'] ?? 'GST verification failed').toString();
+        if (msg.toLowerCase().contains('does not match') || msg.toLowerCase().contains('registered name') || msg.toLowerCase().contains('company name')) {
+          if (Get.context != null) {
+            showMismatchErrorDialog(
+              Get.context!,
+              title: "GST Verification Mismatch",
+              message: msg,
+            );
+          }
+        } else {
+          Utility.snacBar(msg, ColorsValue.redColor);
+        }
       }
     } catch (e) {
       Utility.snacBar("Error: $e", ColorsValue.redColor);
@@ -1044,9 +1448,10 @@ class AuthController extends GetxController {
     isCompanyPanVerifying = true;
     update();
     try {
+      final registeredName = companyPersonNameController.text.trim();
       final body = {
         "pan_number": panNumber.trim().toUpperCase(),
-        "name": companyPersonNameController.text.trim(),
+        "name": registeredName,
         "dob": _normalizeDob(companyDobController.text),
       };
       final response = await authPresenter.authUsecases.apiWrapper.makeRequest(
@@ -1055,17 +1460,47 @@ class AuthController extends GetxController {
         body,
         false,
       );
+      dynamic decoded = {};
+      try {
+        decoded = jsonDecode(response.data);
+      } catch (_) {}
+
       if (!response.hasError) {
-        final decoded = jsonDecode(response.data);
-        isCompanyPanVerified = true;
         final data = decoded['Data'] ?? decoded['data'] ?? {};
+        final docName = (data['name'] ?? data['registered_name'] ?? data['full_name'] ?? data['name_as_per_pan'] ?? '').toString().trim();
+
+        // Strict name matching check against registered contact person name
+        if (docName.isNotEmpty && !checkNameMatch(registeredName, docName, type: 'person')) {
+          isCompanyPanVerified = false;
+          update();
+          if (Get.context != null) {
+            showMismatchErrorDialog(
+              Get.context!,
+              title: "PAN Verification Mismatch",
+              message: 'The PAN card holder name "$docName" does not match your registered contact person name "$registeredName". You cannot submit documents belonging to another person. Please submit the PAN card belonging to $registeredName.',
+            );
+          }
+          return;
+        }
+
+        isCompanyPanVerified = true;
         if (Get.context != null) {
           showPanDetailsDialog(Get.context!, data, themeColor: ColorsValue.appColor);
         }
         Utility.snacBar("PAN verified successfully", ColorsValue.greenColor);
       } else {
-        final decoded = jsonDecode(response.data);
-        Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? 'PAN verification failed', ColorsValue.redColor);
+        final msg = (decoded['message'] ?? decoded['Message'] ?? 'PAN verification failed').toString();
+        if (msg.toLowerCase().contains('does not match') || msg.toLowerCase().contains('registered name')) {
+          if (Get.context != null) {
+            showMismatchErrorDialog(
+              Get.context!,
+              title: "PAN Verification Mismatch",
+              message: msg,
+            );
+          }
+        } else {
+          Utility.snacBar(msg, ColorsValue.redColor);
+        }
       }
     } catch (e) {
       Utility.snacBar("Error: $e", ColorsValue.redColor);
@@ -1083,23 +1518,57 @@ class AuthController extends GetxController {
     isCompanyGstVerifying = true;
     update();
     try {
+      final companyName = companyNameController.text.trim();
       final response = await authPresenter.authUsecases.apiWrapper.makeRequest(
         "verify/gst",
         Request.post,
-        {"gst_number": gstNumber.trim().toUpperCase()},
+        {
+          "gst_number": gstNumber.trim().toUpperCase(),
+          "company_name": companyName,
+        },
         false,
       );
+      dynamic decoded = {};
+      try {
+        decoded = jsonDecode(response.data);
+      } catch (_) {}
+
       if (!response.hasError) {
-        final decoded = jsonDecode(response.data);
-        isCompanyGstVerified = true;
         final data = decoded['Data']?['data'] ?? decoded['Data'] ?? {};
+        final tradeName = (data['trade_name'] ?? data['tradeName'] ?? data['legal_name'] ?? data['legalName'] ?? data['name'] ?? '').toString().trim();
+
+        // Strict company name matching check against registered company name
+        if (tradeName.isNotEmpty && !checkNameMatch(companyName, tradeName, type: 'company')) {
+          isCompanyGstVerified = false;
+          update();
+          if (Get.context != null) {
+            showMismatchErrorDialog(
+              Get.context!,
+              title: "GST Verification Mismatch",
+              message: 'The GSTIN trade/legal name "$tradeName" does not match your registered company name "$companyName". You cannot submit GSTIN belonging to another company. Please submit GSTIN for $companyName.',
+            );
+          }
+          return;
+        }
+
+        isCompanyGstVerified = true;
         if (Get.context != null) {
           showGstDetailsDialog(Get.context!, data, themeColor: ColorsValue.appColor);
         }
         Utility.snacBar("GST verified successfully", ColorsValue.greenColor);
       } else {
-        final decoded = jsonDecode(response.data);
-        Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? 'GST verification failed', ColorsValue.redColor);
+        final msg = (decoded['message'] ?? decoded['Message'] ?? 'GST verification failed').toString();
+        if (msg.toLowerCase().contains('does not match') || msg.toLowerCase().contains('company name')) {
+          if (Get.context != null) {
+            showMismatchErrorDialog(
+              Get.context!,
+              title: "GST Verification Mismatch",
+              message: msg,
+            );
+          }
+        } else {
+          Utility.snacBar(msg, ColorsValue.redColor);
+        }
       }
     } catch (e) {
       Utility.snacBar("Error: $e", ColorsValue.redColor);
@@ -1217,6 +1686,10 @@ class AuthController extends GetxController {
   // ------------------------------------------------- INDIVIDUAL REGISTER API -------------------------------------------------
 
   Future<void> submitIndividualRegister() async {
+    if (!isIndividualMobileVerified) {
+      Utility.snacBar("Please verify your mobile number with OTP before submitting", ColorsValue.redColor);
+      return;
+    }
     if (!isPanVerified) {
       Utility.snacBar("Please verify PAN number before proceeding", ColorsValue.redColor);
       return;
@@ -1335,6 +1808,10 @@ class AuthController extends GetxController {
   // ------------------------------------------------- COMPANY REGISTER API -------------------------------------------------
 
   Future<void> submitCompanyRegister() async {
+    if (!isCompanyMobileVerified) {
+      Utility.snacBar("Please verify your mobile number with OTP before submitting", ColorsValue.redColor);
+      return;
+    }
     if (!isCompanyPanVerified) {
       Utility.snacBar("Please verify PAN number before submitting", ColorsValue.redColor);
       return;
