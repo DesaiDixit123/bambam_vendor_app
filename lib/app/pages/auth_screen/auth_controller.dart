@@ -562,6 +562,7 @@ class AuthController extends GetxController {
   TextEditingController businessLicenseController = TextEditingController();
   TextEditingController aadhaarPanController = TextEditingController();
   TextEditingController aadharCardController = TextEditingController();
+  TextEditingController aadharCardBackController = TextEditingController();
   TextEditingController panCardController = TextEditingController();
   TextEditingController gstCertificateController = TextEditingController();
   TextEditingController electricityBillController = TextEditingController();
@@ -587,6 +588,7 @@ class AuthController extends GetxController {
   File? businessLicense;
   File? aadhaarPan;
   File? aadharCard;
+  File? aadharCardBack;
   File? panCard;
   File? gstCertificate;
   File? addressProof;
@@ -1759,6 +1761,8 @@ class AuthController extends GetxController {
       if (ownerPhoto != null) "owner_photo": ownerPhoto!,
       if (visitingCard != null) "visiting_card": visitingCard!,
       if (aadharCard != null) "aadhar_card": aadharCard!,
+      if (aadharCard != null) "aadhar_card_front": aadharCard!,
+      if (aadharCardBack != null) "aadhar_card_back": aadharCardBack!,
       if (panCard != null) "pan_card": panCard!,
       if (gstCertificate != null) "gst_certificate": gstCertificate!,
       if (addressProof != null) "address_proof": addressProof!,
@@ -1861,6 +1865,8 @@ class AuthController extends GetxController {
       if (visitingCard != null) "visiting_card": visitingCard!,
       if (businessLicense != null) "business_license": businessLicense!,
       if (aadharCard != null) "aadhar_card": aadharCard!,
+      if (aadharCard != null) "aadhar_card_front": aadharCard!,
+      if (aadharCardBack != null) "aadhar_card_back": aadharCardBack!,
       if (panCard != null) "pan_card": panCard!,
       if (gstCertificate != null) "gst_certificate": gstCertificate!,
       if (addressProof != null) "address_proof": addressProof!,

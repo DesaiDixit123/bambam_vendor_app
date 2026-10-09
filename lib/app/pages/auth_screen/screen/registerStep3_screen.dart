@@ -39,6 +39,7 @@ class Registerstep3Screen extends StatelessWidget {
                     }
                     if (controller.businessLicense == null ||
                         controller.aadharCard == null ||
+                        controller.aadharCardBack == null ||
                         controller.panCard == null ||
                         controller.gstCertificate == null ||
                         controller.addressProof == null ||
@@ -238,12 +239,25 @@ class Registerstep3Screen extends StatelessWidget {
               Dimens.boxHeight20,
 
               _documentField(
-                title: "Aadhaar Card".tr,
+                title: "Aadhaar Card (Front)".tr,
                 controller: controller.aadharCardController,
                 onTap: () {
                   controller.pickDocument(
                     onPicked: (file) => controller.aadharCard = file,
                     controller: controller.aadharCardController,
+                  );
+                },
+              ),
+
+              Dimens.boxHeight20,
+
+              _documentField(
+                title: "Aadhaar Card (Back)".tr,
+                controller: controller.aadharCardBackController,
+                onTap: () {
+                  controller.pickDocument(
+                    onPicked: (file) => controller.aadharCardBack = file,
+                    controller: controller.aadharCardBackController,
                   );
                 },
               ),

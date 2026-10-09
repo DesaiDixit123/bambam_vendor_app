@@ -39,6 +39,7 @@ class InRegister4 extends StatelessWidget {
                     }
                     // Simplified validation for demo, but in real app we'd check all required
                     if (controller.aadharCard == null ||
+                        controller.aadharCardBack == null ||
                         controller.panCard == null ||
                         controller.dlPhoto == null ||
                         controller.addressProof == null) {
@@ -142,11 +143,19 @@ class InRegister4 extends StatelessWidget {
                 ),
               ),
               _documentField(
-                title: "Aadhaar Card".tr,
+                title: "Aadhaar Card (Front)".tr,
                 controller: controller.aadharCardController,
                 onTap: () => controller.pickDocument(
                   onPicked: (file) => controller.aadharCard = file,
                   controller: controller.aadharCardController,
+                ),
+              ),
+              _documentField(
+                title: "Aadhaar Card (Back)".tr,
+                controller: controller.aadharCardBackController,
+                onTap: () => controller.pickDocument(
+                  onPicked: (file) => controller.aadharCardBack = file,
+                  controller: controller.aadharCardBackController,
                 ),
               ),
               _documentField(
