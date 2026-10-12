@@ -93,10 +93,11 @@ class _ReviewingScreenState extends State<ReviewingScreen> {
   }
 
   Future<void> _launchCall() async {
-    final Uri uri = Uri(scheme: 'tel', path: '+919998877665');
+    final Uri uri = Uri(scheme: 'tel', path: '+918980131929');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
+
       Utility.snacBar("Could not launch phone dialer", ColorsValue.redColor);
     }
   }
@@ -211,7 +212,7 @@ class _ReviewingScreenState extends State<ReviewingScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          isRejected ? "ACTION REQUIRED" : "UNDER REVIEW / પ્રતીક્ષા",
+                          isRejected ? "ACTION REQUIRED" : "APPLICATION UNDER REVIEW",
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,
@@ -225,8 +226,8 @@ class _ReviewingScreenState extends State<ReviewingScreen> {
                   const SizedBox(height: 14),
                   Text(
                     isRejected
-                        ? "તમારી પ્રોફાઇલ એડમિન દ્વારા રિજેક્ટ કરવામાં આવી છે"
-                        : "તમારી પ્રોફાઇલ હજુ વેરિફિકેશન હેઠળ પેન્ડિંગ છે",
+                        ? "Your Application Was Rejected by Admin"
+                        : "Your Profile Verification is Under Review",
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 19,
@@ -237,8 +238,8 @@ class _ReviewingScreenState extends State<ReviewingScreen> {
                   const SizedBox(height: 8),
                   Text(
                     isRejected
-                        ? "તમારી પ્રોફાઇલમાં કેટલીક ભૂલ છે અથવા દસ્તાવેજ સ્પષ્ટ નથી. કૃપા કરીને નીચે આપેલ કારણ તપાસો અને ફરીથી દસ્તાવેજ અપલોડ કરો."
-                        : "તમારી પ્રોફાઇલ સબમિટ થઈ ગઈ છે. એડમિન ટીમ દ્વારા વેરિફિકેશન પ્રક્રિયા ચાલી રહી છે. મહેરબાની કરીને થોડી રાહ જુઓ.",
+                        ? "Your profile was reviewed and rejected. Please check the reason below, re-upload documents, and resubmit for approval."
+                        : "Your profile has been submitted successfully and is currently under verification by the BamBam Cabs Admin team. You will be notified once activated.",
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.95),
                       fontSize: 13,
@@ -246,6 +247,7 @@ class _ReviewingScreenState extends State<ReviewingScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+
                   const SizedBox(height: 18),
                   Row(
                     children: [
@@ -320,13 +322,14 @@ class _ReviewingScreenState extends State<ReviewingScreen> {
                         Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 22),
                         SizedBox(width: 8),
                         Text(
-                          "રિજેક્શનનું કારણ / Reason for Rejection",
+                          "Reason for Rejection",
                           style: TextStyle(
                             color: Color(0xFF991B1B),
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -473,7 +476,7 @@ class _ReviewingScreenState extends State<ReviewingScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
-                      "ADMIN HELP DESK / સહાયતા કેન્દ્ર",
+                      "ADMIN HELP DESK",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -492,13 +495,14 @@ class _ReviewingScreenState extends State<ReviewingScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    "વેરિફિકેશન અંગે કોઈપણ પ્રશ્ન હોય તો સવારે ૧૦:૦૦ થી સાંજે ૬:૦૦ વાગ્યા દરમિયાન અમારો સંપર્ક કરો.",
+                    "If you have any questions or need assistance, please contact our help desk between 10:00 AM and 6:00 PM.",
                     style: TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 12,
                       height: 1.4,
                     ),
                   ),
+
                   const SizedBox(height: 16),
 
                   // Phone contact
@@ -533,9 +537,10 @@ class _ReviewingScreenState extends State<ReviewingScreen> {
                                   style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                                 Text(
-                                  "+91 99988 77665",
+                                  "+91 89801 31929",
                                   style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
                                 ),
+
                               ],
                             ),
                           ),

@@ -1080,6 +1080,7 @@ class AuthController extends GetxController {
       } catch (_) {}
 
       if (!response.hasError && (decoded['IsSuccess'] == true || decoded['status'] == true)) {
+        print("🔥 [FLUTTER REGISTRATION OTP]: ${decoded['Data']?['otp'] ?? decoded['otp']}");
         isCompanyMobileOtpSent = true;
         startCompanyOtpTimer();
         Utility.snacBar("OTP sent successfully to your mobile number", ColorsValue.greenColor);
@@ -1186,6 +1187,7 @@ class AuthController extends GetxController {
       } catch (_) {}
 
       if (!response.hasError && (decoded['IsSuccess'] == true || decoded['status'] == true)) {
+        print("🔥 [FLUTTER REGISTRATION OTP]: ${decoded['Data']?['otp'] ?? decoded['otp']}");
         isIndividualMobileOtpSent = true;
         startIndividualOtpTimer();
         Utility.snacBar("OTP sent successfully to your mobile number", ColorsValue.greenColor);
