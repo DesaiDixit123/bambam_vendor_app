@@ -120,6 +120,7 @@ class AuthController extends GetxController {
   @override
   void onClose() {
     _otpTimer?.cancel();
+    _emailDebounceTimer?.cancel();
     _companyOtpTimer?.cancel();
     _individualOtpTimer?.cancel();
     companyOtpController.dispose();
@@ -200,22 +201,50 @@ class AuthController extends GetxController {
           Get.find<Repository>().saveValue(LocalKeys.authToken, accessToken);
         }
 
-        final vendorDetails = data['vendordetails'];
         if (vendorDetails != null && vendorDetails['_id'] != null) {
           String vId = vendorDetails['_id'].toString();
           Get.find<Repository>().saveValue(LocalKeys.vendorId, vId);
           Get.find<Repository>().saveValue(LocalKeys.chanelId, vId);
           SocketConnection.initSocket();
         }
+
+        if (vendorDetails != null) {
+          final status = (vendorDetails['approval_status'] ?? '').toString().toLowerCase();
+          final reason = (vendorDetails['rejected_reason'] ?? '').toString();
+          final desc = (vendorDetails['rejected_reason_description'] ?? '').toString();
+          final regType = (vendorDetails['register_type'] ?? '').toString();
+
+          Get.find<Repository>().saveValue(LocalKeys.vendorApprovalStatus, status);
+          Get.find<Repository>().saveValue(LocalKeys.vendorRejectedReason, reason);
+          Get.find<Repository>().saveValue(LocalKeys.vendorRejectedDescription, desc);
+          Get.find<Repository>().saveValue(LocalKeys.vendorRegisterType, regType);
+
+          if (status.isNotEmpty && status != 'approved') {
+            RouteManagement.gotoReviewingScreen();
+            return;
+          }
+        }
       }
       RouteManagement.gotoHomeScreen();
     } else {
-      final decoded = jsonDecode(response.data);
+      dynamic decoded = {};
+      try {
+        decoded = jsonDecode(response.data);
+      } catch (_) {}
 
+      final msg = decoded['Message'] ?? decoded['message'] ?? 'Something went wrong';
       Utility.snacBar(
-        decoded['Message'] ?? decoded['message'] ?? 'Something went wrong',
+        msg.toString(),
         ColorsValue.redColor,
       );
+
+      final status = (decoded['approval_status'] ?? decoded['Data']?['approval_status'] ?? '').toString().toLowerCase();
+      final isApproved = decoded['isApproved'];
+      if (status == 'pending' || status == 'rejected' || isApproved == false || msg.toString().toLowerCase().contains('not approved') || msg.toString().toLowerCase().contains('pending')) {
+        Future.delayed(const Duration(milliseconds: 600), () {
+          RouteManagement.gotoReviewingScreen();
+        });
+      }
     }
   }
 
@@ -289,6 +318,13 @@ class AuthController extends GetxController {
         final msg = decoded['Message'] ?? decoded['message'] ?? decoded['error'] ?? 'Something went wrong';
         print("[FLUTTER LOGIN] API Error Message: '$msg'");
         Utility.snacBar(msg.toString(), ColorsValue.redColor);
+
+        final status = (decoded['approval_status'] ?? decoded['Data']?['approval_status'] ?? '').toString().toLowerCase();
+        if (status == 'pending' || status == 'rejected' || msg.toString().toLowerCase().contains('not approved') || msg.toString().toLowerCase().contains('pending')) {
+          Future.delayed(const Duration(milliseconds: 600), () {
+            RouteManagement.gotoReviewingScreen();
+          });
+        }
       }
     } catch (e, stack) {
       print("[FLUTTER LOGIN] EXCEPTION in getOtp: $e");
@@ -438,6 +474,7 @@ class AuthController extends GetxController {
 
           final vendorDetails = data['vendordetails'];
           print("[FLUTTER LOGIN] Vendor Details: $vendorDetails");
+
           if (vendorDetails != null && vendorDetails['_id'] != null) {
             String vId = vendorDetails['_id'].toString();
             Get.find<Repository>().saveValue(LocalKeys.vendorId, vId);
@@ -445,6 +482,24 @@ class AuthController extends GetxController {
             print("[FLUTTER LOGIN] Saved Vendor ID and Chanel ID: '$vId'");
             SocketConnection.initSocket();
             print("[FLUTTER LOGIN] Socket connection initialized");
+          }
+
+          if (vendorDetails != null) {
+            final status = (vendorDetails['approval_status'] ?? '').toString().toLowerCase();
+            final reason = (vendorDetails['rejected_reason'] ?? '').toString();
+            final desc = (vendorDetails['rejected_reason_description'] ?? '').toString();
+            final regType = (vendorDetails['register_type'] ?? '').toString();
+
+            Get.find<Repository>().saveValue(LocalKeys.vendorApprovalStatus, status);
+            Get.find<Repository>().saveValue(LocalKeys.vendorRejectedReason, reason);
+            Get.find<Repository>().saveValue(LocalKeys.vendorRejectedDescription, desc);
+            Get.find<Repository>().saveValue(LocalKeys.vendorRegisterType, regType);
+
+            if (status.isNotEmpty && status != 'approved') {
+              _otpTimer?.cancel();
+              RouteManagement.gotoReviewingScreen();
+              return;
+            }
           }
         } else {
           print("[FLUTTER LOGIN] WARNING: 'Data' key not found in response.");
@@ -467,6 +522,15 @@ class AuthController extends GetxController {
         final msg = decoded['Message'] ?? decoded['message'] ?? 'Something went wrong';
         print("[FLUTTER LOGIN] Verification Error Message: '$msg'");
         Utility.snacBar(msg.toString(), ColorsValue.redColor);
+
+        final status = (decoded['approval_status'] ?? decoded['Data']?['approval_status'] ?? '').toString().toLowerCase();
+        final isApproved = decoded['isApproved'];
+        if (status == 'pending' || status == 'rejected' || isApproved == false || msg.toString().toLowerCase().contains('not approved') || msg.toString().toLowerCase().contains('pending')) {
+          _otpTimer?.cancel();
+          Future.delayed(const Duration(milliseconds: 600), () {
+            RouteManagement.gotoReviewingScreen();
+          });
+        }
       }
     } catch (e, stack) {
       print("[FLUTTER LOGIN] EXCEPTION in verifyOtp: $e");
@@ -517,6 +581,89 @@ class AuthController extends GetxController {
   TextEditingController pincodeController = TextEditingController();
   TextEditingController ownerPhotoController = TextEditingController();
   bool isManualUsername = false;
+
+  // Live Email Duplicate Check State
+  String? emailError;
+  bool isCheckingEmail = false;
+  Timer? _emailDebounceTimer;
+
+  // Fleet Size Validation State
+  String? fleetSizeError;
+
+  void checkEmailDuplicate(String email) {
+    _emailDebounceTimer?.cancel();
+    final trimmed = email.trim();
+    if (trimmed.isEmpty) {
+      emailError = null;
+      isCheckingEmail = false;
+      update();
+      return;
+    }
+
+    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    if (!emailRegex.hasMatch(trimmed)) {
+      emailError = "Please enter a valid email address";
+      isCheckingEmail = false;
+      update();
+      return;
+    }
+
+    emailError = null;
+    isCheckingEmail = true;
+    update();
+
+    _emailDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        final response = await authPresenter.authUsecases.apiWrapper.makeRequest(
+          "register/check-email",
+          Request.post,
+          {"email": trimmed},
+          false,
+        );
+
+        if (response.hasError) {
+          try {
+            final decoded = jsonDecode(response.data);
+            if (decoded['isAlreadyRegistered'] == true ||
+                response.statusCode == 400 ||
+                (decoded['Message'] != null &&
+                    decoded['Message'].toString().toLowerCase().contains('already registered'))) {
+              emailError = decoded['Message'] ??
+                  decoded['message'] ??
+                  "Email is already registered. Please use another email or login.";
+            } else {
+              emailError = decoded['Message'] ??
+                  decoded['message'] ??
+                  "Email is already registered.";
+            }
+          } catch (_) {
+            emailError = "Email is already registered. Please use another email or login.";
+          }
+        } else {
+          emailError = null;
+        }
+      } catch (e) {
+        log("Error checking email duplicate: $e");
+      } finally {
+        isCheckingEmail = false;
+        update();
+      }
+    });
+  }
+
+  void validateFleetSize(String val) {
+    final trimmed = val.trim();
+    if (trimmed.isEmpty) {
+      fleetSizeError = null;
+    } else if (!RegExp(r'^\d+$').hasMatch(trimmed)) {
+      fleetSizeError = "Fleet Size must contain only numbers";
+    } else if (int.tryParse(trimmed) == null || int.parse(trimmed) <= 0) {
+      fleetSizeError = "Fleet Size must be at least 1";
+    } else {
+      fleetSizeError = null;
+    }
+    update();
+  }
 
   // License Details
   TextEditingController dlNumberController = TextEditingController();
@@ -1156,16 +1303,22 @@ class AuthController extends GetxController {
   // ─────────────────────────────────────────────────────────────────────────
 
   Future<void> verifyPAN(String panNumber) async {
-    if (panNumber.trim().isEmpty) {
+    final cleanPan = panNumber.trim().toUpperCase();
+    if (cleanPan.isEmpty) {
       Utility.snacBar("Please enter PAN number", ColorsValue.redColor);
       return;
     }
+    if (!RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$').hasMatch(cleanPan)) {
+      Utility.snacBar("Please enter a valid 10-digit PAN number (e.g. ABCDE1234F)", ColorsValue.redColor);
+      return;
+    }
+    panNumberController.text = cleanPan;
     isPanVerifying = true;
     update();
     try {
       final registeredName = fullNameController.text.trim();
       final body = {
-        "pan_number": panNumber.trim().toUpperCase(),
+        "pan_number": cleanPan,
         "name": registeredName,
         "dob": _normalizeDob(dobController.text),
       };
@@ -1226,10 +1379,16 @@ class AuthController extends GetxController {
   }
 
   Future<void> verifyGST(String gstNumber) async {
-    if (gstNumber.trim().isEmpty) {
+    final cleanGst = gstNumber.trim().toUpperCase();
+    if (cleanGst.isEmpty) {
       Utility.snacBar("Please enter GST number", ColorsValue.redColor);
       return;
     }
+    if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$').hasMatch(cleanGst)) {
+      Utility.snacBar("Please enter a valid 15-digit GSTIN (e.g. 24ABCDE1234F1Z5)", ColorsValue.redColor);
+      return;
+    }
+    gstNumberController.text = cleanGst;
     isGstVerifying = true;
     update();
     try {
@@ -1238,7 +1397,7 @@ class AuthController extends GetxController {
         "verify/gst",
         Request.post,
         {
-          "gst_number": gstNumber.trim().toUpperCase(),
+          "gst_number": cleanGst,
           "company_name": registeredName,
         },
         false,
@@ -1423,16 +1582,22 @@ class AuthController extends GetxController {
   // -----------------------------------------------------------------------
 
   Future<void> verifyCompanyPAN(String panNumber) async {
-    if (panNumber.trim().isEmpty) {
+    final cleanPan = panNumber.trim().toUpperCase();
+    if (cleanPan.isEmpty) {
       Utility.snacBar("Please enter PAN number", ColorsValue.redColor);
       return;
     }
+    if (!RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$').hasMatch(cleanPan)) {
+      Utility.snacBar("Please enter a valid 10-digit PAN number (e.g. ABCDE1234F)", ColorsValue.redColor);
+      return;
+    }
+    panNumberController.text = cleanPan;
     isCompanyPanVerifying = true;
     update();
     try {
       final registeredName = companyPersonNameController.text.trim();
       final body = {
-        "pan_number": panNumber.trim().toUpperCase(),
+        "pan_number": cleanPan,
         "name": registeredName,
         "dob": _normalizeDob(companyDobController.text),
       };
@@ -1493,10 +1658,16 @@ class AuthController extends GetxController {
   }
 
   Future<void> verifyCompanyGST(String gstNumber) async {
-    if (gstNumber.trim().isEmpty) {
+    final cleanGst = gstNumber.trim().toUpperCase();
+    if (cleanGst.isEmpty) {
       Utility.snacBar("Please enter GST number", ColorsValue.redColor);
       return;
     }
+    if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$').hasMatch(cleanGst)) {
+      Utility.snacBar("Please enter a valid 15-digit GSTIN (e.g. 24ABCDE1234F1Z5)", ColorsValue.redColor);
+      return;
+    }
+    gstNumberController.text = cleanGst;
     isCompanyGstVerifying = true;
     update();
     try {
@@ -1505,7 +1676,7 @@ class AuthController extends GetxController {
         "verify/gst",
         Request.post,
         {
-          "gst_number": gstNumber.trim().toUpperCase(),
+          "gst_number": cleanGst,
           "company_name": companyName,
         },
         false,
@@ -1706,7 +1877,9 @@ class AuthController extends GetxController {
       "upi_id": upiIdController.text.trim(),
 
       "aadhar_number": aadhaarNumberController.text.trim(),
-      "pan_number": panNumberController.text.trim(),
+      "pan_number": panNumberController.text.trim().toUpperCase(),
+      if (gstNumberController.text.trim().isNotEmpty)
+        "gst_number": gstNumberController.text.trim().toUpperCase(),
 
       "DL_number": dlNumberController.text.trim(),
       "DL_issue_date": dlIssueDateController.text.trim(),
@@ -1835,8 +2008,8 @@ class AuthController extends GetxController {
       "owner_city": cityController.text.trim(),
 
       "aadhar_number": aadhaarNumberController.text.trim(),
-      "pan_number": panNumberController.text.trim(),
-      "gst_number": gstNumberController.text.trim(),
+      "pan_number": panNumberController.text.trim().toUpperCase(),
+      "gst_number": gstNumberController.text.trim().toUpperCase(),
     };
     print(fields);
     final files = <String, File>{

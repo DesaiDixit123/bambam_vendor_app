@@ -9,4 +9,8 @@ abstract class LocalKeys {
   static String lowWalletPopupLastDismissedAt = "lowWalletPopupLastDismissedAt";
   static String ringtoneEnabled = "ringtoneEnabled";
   static String selectedRingtoneUrl = "selectedRingtoneUrl";
+  static String vendorApprovalStatus = "vendorApprovalStatus";
+  static String vendorRejectedReason = "vendorRejectedReason";
+  static String vendorRejectedDescription = "vendorRejectedDescription";
+  static String vendorRegisterType = "vendorRegisterType";
 }

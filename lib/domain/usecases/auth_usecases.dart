@@ -42,6 +42,40 @@ class AuthUsecases {
     );
   }
 
+  Future<ResponseModel> updateIndividualVendor({
+    required Map<String, String> fields,
+    required Map<String, File> files,
+  }) {
+    return apiWrapper.makeRequest(
+      'indivisual/update',
+      Request.multipartPost,
+      {
+        'fields': fields,
+        'files': files,
+      },
+      true,
+    );
+  }
+
+  Future<ResponseModel> updateCompanyVendor({
+    required Map<String, String> fields,
+    required Map<String, File> files,
+  }) {
+    return apiWrapper.makeRequest(
+      'update-company-vendor',
+      Request.multipartPut,
+      {
+        'fields': fields,
+        'files': files,
+      },
+      true,
+    );
+  }
+
+  Future<ResponseModel> fetchVendorProfile({bool isLoading = true}) {
+    return apiWrapper.makeRequest("profile", Request.get, null, isLoading);
+  }
+
   Future<ResponseModel> fetchStates() {
     return apiWrapper.makeRequest("common/states/IN", Request.get, null, false);
   }

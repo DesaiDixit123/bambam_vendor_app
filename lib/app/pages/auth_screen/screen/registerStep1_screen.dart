@@ -34,8 +34,25 @@ class Registerstep1Screen extends StatelessWidget {
                         controller.companyDobController.text.isEmpty ||
                         controller.usernameController.text.isEmpty ||
                         controller.passwordController.text.isEmpty ||
-                        controller.rePasswordController.text.isEmpty) {
+                        controller.rePasswordController.text.isEmpty ||
+                        controller.gmailController.text.isEmpty ||
+                        controller.fleetSizeController.text.isEmpty) {
                       Utility.snacBar("Please fill all required fields", ColorsValue.redColor);
+                      return;
+                    }
+
+                    if (controller.emailError != null && controller.emailError!.isNotEmpty) {
+                      Utility.snacBar(controller.emailError!, ColorsValue.redColor);
+                      return;
+                    }
+                    if (controller.isCheckingEmail) {
+                      Utility.snacBar("Checking email availability...", ColorsValue.appColor);
+                      return;
+                    }
+
+                    final fleetText = controller.fleetSizeController.text.trim();
+                    if (!RegExp(r'^\d+$').hasMatch(fleetText) || int.tryParse(fleetText) == null || int.parse(fleetText) <= 0) {
+                      Utility.snacBar("Fleet Size must contain only numbers", ColorsValue.redColor);
                       return;
                     }
 
@@ -434,19 +451,41 @@ class Registerstep1Screen extends StatelessWidget {
                 hintText: "Enter Email".tr,
                 filled: true,
                 fillColor: ColorsValue.fildColos,
+                keyboardType: TextInputType.emailAddress,
                 isBorder: true,
                 isTitle: true,
                 isCompulsory: true,
                 textEditingController: controller.gmailController,
-                onChanged: (vaule) {
-                  controller.update();
+                onChanged: (value) {
+                  controller.checkEmailDuplicate(value);
                 },
                 validator: (value) {
-                  if (value!.isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return "Enter Email".tr;
+                  }
+                  final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                  if (!emailRegex.hasMatch(value.trim())) {
+                    return "Please enter a valid email address";
+                  }
+                  if (controller.emailError != null && controller.emailError!.isNotEmpty) {
+                    return controller.emailError;
                   }
                   return null;
                 },
+                suffixIcon: controller.isCheckingEmail
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: ColorsValue.appColor),
+                        ),
+                      )
+                    : (controller.emailError == null &&
+                            controller.gmailController.text.trim().isNotEmpty &&
+                            RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(controller.gmailController.text.trim()))
+                        ? const Icon(Icons.check_circle, color: Colors.green)
+                        : null,
                 title: "Email".tr,
                 hintStyle: Styles.g7txtColor40012,
                 titleStyle: Styles.blackColor60014,
@@ -585,14 +624,20 @@ class Registerstep1Screen extends StatelessWidget {
                 isTitle: true,
                 isCompulsory: true,
                 textEditingController: controller.fleetSizeController,
-                onChanged: (vaule) {
-                  controller.update();
+                onChanged: (value) {
+                  controller.validateFleetSize(value);
                 },
                 validator: (value) {
-                  if (value!.isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return "Enter Fleet Size";
                   }
-                  return null;
+                  if (!RegExp(r'^\d+$').hasMatch(value.trim())) {
+                    return "Fleet Size must contain only numbers";
+                  }
+                  if (int.tryParse(value.trim()) == null || int.parse(value.trim()) <= 0) {
+                    return "Fleet Size must be at least 1";
+                  }
+                  return controller.fleetSizeError;
                 },
                 title: "Fleet Size".tr,
                 hintStyle: Styles.g7txtColor40012,

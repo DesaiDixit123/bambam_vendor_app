@@ -111,12 +111,23 @@ class Registerstep3Screen extends StatelessWidget {
                 isTitle: true,
                 isCompulsory: true,
                 textEditingController: controller.panNumberController,
+                inputFormatters: [UpperCaseTextFormatter()],
                 title: "PAN Number".tr,
                 hintText: "Enter PAN Number".tr,
                 readOnly: false,
                 onChanged: (value) {
                   controller.isCompanyPanVerified = false;
                   controller.update();
+                },
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return "Enter PAN Number".tr;
+                  }
+                  final clean = value.trim().toUpperCase();
+                  if (!RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$').hasMatch(clean)) {
+                    return "Invalid PAN format (e.g. ABCDE1234F)";
+                  }
+                  return null;
                 },
                 maxLength: 10,
                 suffixIcon: controller.isCompanyPanVerifying
@@ -145,12 +156,23 @@ class Registerstep3Screen extends StatelessWidget {
                 isTitle: true,
                 isCompulsory: true,
                 textEditingController: controller.gstNumberController,
+                inputFormatters: [UpperCaseTextFormatter()],
                 title: "GSTIN",
                 hintText: "Enter GSTIN".tr,
                 readOnly: false,
                 onChanged: (value) {
                   controller.isCompanyGstVerified = false;
                   controller.update();
+                },
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return "Enter GSTIN".tr;
+                  }
+                  final clean = value.trim().toUpperCase();
+                  if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$').hasMatch(clean)) {
+                    return "Invalid GSTIN format (e.g. 24ABCDE1234F1Z5)";
+                  }
+                  return null;
                 },
                 maxLength: 15,
                 suffixIcon: controller.isCompanyGstVerifying

@@ -28,6 +28,30 @@ class AuthPresenter {
     );
   }
 
+  Future<ResponseModel> updateIndividualVendor({
+    required Map<String, String> fields,
+    required Map<String, File> files,
+  }) {
+    return authUsecases.updateIndividualVendor(
+      fields: fields,
+      files: files,
+    );
+  }
+
+  Future<ResponseModel> updateCompanyVendor({
+    required Map<String, String> fields,
+    required Map<String, File> files,
+  }) {
+    return authUsecases.updateCompanyVendor(
+      fields: fields,
+      files: files,
+    );
+  }
+
+  Future<ResponseModel> fetchVendorProfile({bool isLoading = true}) {
+    return authUsecases.fetchVendorProfile(isLoading: isLoading);
+  }
+
   Future<ResponseModel> fetchStates() {
     return authUsecases.fetchStates();
   }

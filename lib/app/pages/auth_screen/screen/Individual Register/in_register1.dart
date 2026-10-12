@@ -37,6 +37,15 @@ class InRegister1 extends StatelessWidget {
                       return;
                     }
 
+                    if (controller.emailError != null && controller.emailError!.isNotEmpty) {
+                      Utility.snacBar(controller.emailError!, ColorsValue.redColor);
+                      return;
+                    }
+                    if (controller.isCheckingEmail) {
+                      Utility.snacBar("Checking email availability...", ColorsValue.appColor);
+                      return;
+                    }
+
                     RouteManagement.gotoInRegister2();
                   },
                   backgroundColor: controller.isIndividualMobileVerified ? ColorsValue.appColor : const Color(0xFFCBD5E1),
@@ -435,23 +444,45 @@ class InRegister1 extends StatelessWidget {
                   hintText: "Enter Email".tr,
                   filled: true,
                   fillColor: ColorsValue.fildColos,
+                  keyboardType: TextInputType.emailAddress,
                   isBorder: true,
                   isTitle: true,
                   isCompulsory: true,
-                textEditingController: controller.gmailController,
-                onChanged: (vaule) {
-                  controller.update();
-                },
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return "Enter Email".tr;
-                  }
-                  return null;
-                },
-                title: "Email".tr,
-                hintStyle: Styles.g7txtColor40012,
-                titleStyle: Styles.blackColor60014,
-              ),
+                  textEditingController: controller.gmailController,
+                  onChanged: (value) {
+                    controller.checkEmailDuplicate(value);
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Enter Email".tr;
+                    }
+                    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                    if (!emailRegex.hasMatch(value.trim())) {
+                      return "Please enter a valid email address";
+                    }
+                    if (controller.emailError != null && controller.emailError!.isNotEmpty) {
+                      return controller.emailError;
+                    }
+                    return null;
+                  },
+                  suffixIcon: controller.isCheckingEmail
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: ColorsValue.appColor),
+                          ),
+                        )
+                      : (controller.emailError == null &&
+                              controller.gmailController.text.trim().isNotEmpty &&
+                              RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(controller.gmailController.text.trim()))
+                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          : null,
+                  title: "Email".tr,
+                  hintStyle: Styles.g7txtColor40012,
+                  titleStyle: Styles.blackColor60014,
+                ),
               Dimens.boxHeight16,
               // Address
               CustomTextFormField(
