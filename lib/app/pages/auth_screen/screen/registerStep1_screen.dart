@@ -26,7 +26,7 @@ class Registerstep1Screen extends StatelessWidget {
                 child: CustomButton(
                   onPressed: () {
                     if (!controller.isCompanyMobileVerified) {
-                      Get.snackbar("Verification Required", "Please verify your mobile number with OTP before proceeding");
+                      Utility.snacBar("Please verify your mobile number with OTP before proceeding", ColorsValue.redColor);
                       return;
                     }
                     if (controller.companyNameController.text.isEmpty ||
@@ -35,7 +35,7 @@ class Registerstep1Screen extends StatelessWidget {
                         controller.usernameController.text.isEmpty ||
                         controller.passwordController.text.isEmpty ||
                         controller.rePasswordController.text.isEmpty) {
-                      Get.snackbar("Error", "Please fill all required fields");
+                      Utility.snacBar("Please fill all required fields", ColorsValue.redColor);
                       return;
                     }
 
@@ -168,31 +168,7 @@ class Registerstep1Screen extends StatelessWidget {
                 titleStyle: Styles.blackColor60014,
               ),
               Dimens.boxHeight16,
-              // 2. Company Name
-              CustomTextFormField(
-                style: Styles.g7txtColor70014,
-                hintText: "Enter Company Name".tr,
-                filled: true,
-                fillColor: ColorsValue.fildColos,
-                isBorder: true,
-                isTitle: true,
-                isCompulsory: true,
-                textEditingController: controller.companyNameController,
-                onChanged: (vaule) {
-                  controller.update();
-                },
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return "Enter Company Name".tr;
-                  }
-                  return null;
-                },
-                title: "Company Name".tr,
-                hintStyle: Styles.g7txtColor40012,
-                titleStyle: Styles.blackColor60014,
-              ),
-              Dimens.boxHeight16,
-              // 3. Contact Person Name
+              // 2. Contact Person Name
               CustomTextFormField(
                 style: Styles.g7txtColor70014,
                 hintText: "Enter Contact Person Name".tr,
@@ -387,6 +363,30 @@ class Registerstep1Screen extends StatelessWidget {
                   ),
                 ),
               ] else ...[
+                Dimens.boxHeight16,
+                // Company Name
+                CustomTextFormField(
+                  style: Styles.g7txtColor70014,
+                  hintText: "Enter Company Name".tr,
+                  filled: true,
+                  fillColor: ColorsValue.fildColos,
+                  isBorder: true,
+                  isTitle: true,
+                  isCompulsory: true,
+                  textEditingController: controller.companyNameController,
+                  onChanged: (vaule) {
+                    controller.update();
+                  },
+                  validator: (value) {
+                    if (value!.isEmpty) {
+                      return "Enter Company Name".tr;
+                    }
+                    return null;
+                  },
+                  title: "Company Name".tr,
+                  hintStyle: Styles.g7txtColor40012,
+                  titleStyle: Styles.blackColor60014,
+                ),
                 Dimens.boxHeight16,
                 // 3a. Contact Person Date of Birth
                 CustomTextFormField(

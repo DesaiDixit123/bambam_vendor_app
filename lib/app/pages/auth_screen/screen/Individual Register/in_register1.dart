@@ -24,7 +24,7 @@ class InRegister1 extends StatelessWidget {
                 child: CustomButton(
                   onPressed: () {
                     if (!controller.isIndividualMobileVerified) {
-                      Get.snackbar("Verification Required", "Please verify your mobile number with OTP before proceeding");
+                      Utility.snacBar("Please verify your mobile number with OTP before proceeding", ColorsValue.redColor);
                       return;
                     }
                     if (controller.fullNameController.text.isEmpty ||
@@ -33,7 +33,7 @@ class InRegister1 extends StatelessWidget {
                         controller.usernameController.text.isEmpty ||
                         controller.passwordController.text.isEmpty ||
                         controller.rePasswordController.text.isEmpty) {
-                      Get.snackbar("Error", "Please fill all required fields");
+                      Utility.snacBar("Please fill all required fields", ColorsValue.redColor);
                       return;
                     }
 

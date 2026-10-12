@@ -720,7 +720,14 @@ class _AadhaarOtpDialogState extends State<AadhaarOtpDialog> {
 // 8. Already Registered Dialog (English popup)
 // ─────────────────────────────────────────────────────────────────────────────
 
-void showAlreadyRegisteredDialog(BuildContext context, {VoidCallback? onLoginTap}) {
+void showAlreadyRegisteredDialog([dynamic contextOrOnLoginTap, VoidCallback? onLoginTap]) {
+  VoidCallback? loginCallback;
+  if (contextOrOnLoginTap is VoidCallback) {
+    loginCallback = contextOrOnLoginTap;
+  } else if (onLoginTap != null) {
+    loginCallback = onLoginTap;
+  }
+
   Get.dialog(
     Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -746,7 +753,7 @@ void showAlreadyRegisteredDialog(BuildContext context, {VoidCallback? onLoginTap
             ),
             const SizedBox(height: 16),
             const Text(
-              'Account Already Exists',
+              'Already Registered',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
@@ -756,7 +763,7 @@ void showAlreadyRegisteredDialog(BuildContext context, {VoidCallback? onLoginTap
             ),
             const SizedBox(height: 10),
             const Text(
-              'You are already registered with this mobile number. Please log in.',
+              'You are already registered with this mobile number. Please log in to your account.',
               style: TextStyle(
                 fontSize: 14,
                 color: Color(0xFF475569),
@@ -778,8 +785,8 @@ void showAlreadyRegisteredDialog(BuildContext context, {VoidCallback? onLoginTap
                 ),
                 onPressed: () {
                   Get.back();
-                  if (onLoginTap != null) {
-                    onLoginTap();
+                  if (loginCallback != null) {
+                    loginCallback();
                   } else {
                     RouteManagement.gotoLogainScreen();
                   }
@@ -819,7 +826,7 @@ void showAlreadyRegisteredDialog(BuildContext context, {VoidCallback? onLoginTap
 // ─────────────────────────────────────────────────────────────────────────────
 
 void showMismatchErrorDialog(
-  BuildContext context, {
+  BuildContext? context, {
   required String title,
   required String message,
   VoidCallback? onClose,

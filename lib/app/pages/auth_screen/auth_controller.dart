@@ -911,10 +911,6 @@ class AuthController extends GetxController {
       Utility.snacBar("Please enter contact person name first", ColorsValue.redColor);
       return;
     }
-    if (companyNameController.text.trim().isEmpty) {
-      Utility.snacBar("Please enter company name first", ColorsValue.redColor);
-      return;
-    }
 
     final mobile10 = cleanMobile.substring(cleanMobile.length - 10);
     isCompanySendingOtp = true;
@@ -943,11 +939,7 @@ class AuthController extends GetxController {
       } else {
         if (decoded['isAlreadyRegistered'] == true ||
             (decoded['message'] ?? decoded['Message'] ?? '').toString().toLowerCase().contains('already registered')) {
-          if (Get.context != null) {
-            showAlreadyRegisteredDialog(Get.context!);
-          } else {
-            Utility.snacBar("You are already registered with this mobile number. Please log in.", ColorsValue.redColor);
-          }
+          showAlreadyRegisteredDialog();
         } else {
           Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Failed to send OTP", ColorsValue.redColor);
         }
@@ -998,11 +990,7 @@ class AuthController extends GetxController {
       } else {
         if (decoded['isAlreadyRegistered'] == true ||
             (decoded['message'] ?? decoded['Message'] ?? '').toString().toLowerCase().contains('already registered')) {
-          if (Get.context != null) {
-            showAlreadyRegisteredDialog(Get.context!);
-          } else {
-            Utility.snacBar("You are already registered with this mobile number. Please log in.", ColorsValue.redColor);
-          }
+          showAlreadyRegisteredDialog();
         } else {
           Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Invalid OTP. Please try again.", ColorsValue.redColor);
         }
@@ -1057,11 +1045,7 @@ class AuthController extends GetxController {
       } else {
         if (decoded['isAlreadyRegistered'] == true ||
             (decoded['message'] ?? decoded['Message'] ?? '').toString().toLowerCase().contains('already registered')) {
-          if (Get.context != null) {
-            showAlreadyRegisteredDialog(Get.context!);
-          } else {
-            Utility.snacBar("You are already registered with this mobile number. Please log in.", ColorsValue.redColor);
-          }
+          showAlreadyRegisteredDialog();
         } else {
           Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Failed to send OTP", ColorsValue.redColor);
         }
@@ -1112,11 +1096,7 @@ class AuthController extends GetxController {
       } else {
         if (decoded['isAlreadyRegistered'] == true ||
             (decoded['message'] ?? decoded['Message'] ?? '').toString().toLowerCase().contains('already registered')) {
-          if (Get.context != null) {
-            showAlreadyRegisteredDialog(Get.context!);
-          } else {
-            Utility.snacBar("You are already registered with this mobile number. Please log in.", ColorsValue.redColor);
-          }
+          showAlreadyRegisteredDialog();
         } else {
           Utility.snacBar(decoded['message'] ?? decoded['Message'] ?? "Invalid OTP. Please try again.", ColorsValue.redColor);
         }
